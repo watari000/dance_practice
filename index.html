@@ -1,0 +1,604 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Pose Sync Viewer with Feedback</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+  
+  <style>
+    :root {
+      --ios-bg: #000000;
+      --ios-card: #1c1c1e;
+      --ios-card-secondary: #2c2c2e;
+      --ios-blue: #0a84ff;
+      --ios-green: #30d158;
+      --ios-red: #ff453a;
+      --ios-yellow: #ffd60a;
+      --ios-text: #ffffff;
+      --ios-subtext: #8e8e93;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      background-color: var(--ios-bg);
+      color: var(--ios-text);
+      margin: 0;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .header {
+      width: 100%;
+      padding: 12px 20px;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 600;
+      border-bottom: 0.5px solid rgba(255, 255, 255, 0.15);
+      background: rgba(28, 28, 30, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .app-content {
+      width: 100%;
+      max-width: 500px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .file-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--ios-card);
+      padding: 12px;
+      border-radius: 12px;
+    }
+
+    .file-input-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--ios-card-secondary);
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .file-input-btn input[type="file"] {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0; cursor: pointer;
+    }
+
+    .file-label-badge {
+      font-size: 12px; padding: 4px 8px; border-radius: 6px; font-weight: 600;
+    }
+    .badge-ref { background: rgba(10, 132, 255, 0.2); color: #64d2ff; }
+    .badge-usr { background: rgba(48, 209, 88, 0.2); color: var(--ios-green); }
+
+    .container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    video, canvas {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: contain;
+    }
+
+    #video2 { z-index: 1; }
+    #video1 {
+      opacity: 0.4;
+      pointer-events: none;
+      z-index: 2;
+      transform-origin: center center;
+      will-change: transform;
+    }
+    #outputCanvas { pointer-events: none; z-index: 3; }
+
+    /* オーバーレイ：修正アドバイス UI */
+    .overlay-hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      z-index: 4;
+      pointer-events: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .score-badge {
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ios-green);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .advice-box {
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      padding: 8px 12px;
+      border-radius: 12px;
+      max-width: 60%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border: 1px solid rgba(255, 69, 58, 0.4);
+    }
+
+    .advice-item {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ios-red);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .controls-card {
+      background: var(--ios-card);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .ios-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background-color: var(--ios-blue);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: var(--ios-subtext);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%; height: 4px;
+      border-radius: 2px;
+      background: var(--ios-card-secondary);
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">ダンス骨格照合 & アドバイス</div>
+
+  <div class="app-content">
+    <div class="file-inputs">
+      <div class="file-input-btn">
+        <span id="fileName1">1. 参考動画を選択</span>
+        <span class="file-label-badge badge-ref">青骨格</span>
+        <input type="file" id="videoInput1" accept="video/*" playsinline>
+      </div>
+      <div class="file-input-btn">
+        <span id="fileName2">2. 練習動画を選択</span>
+        <span class="file-label-badge badge-usr">土台</span>
+        <input type="file" id="videoInput2" accept="video/*" playsinline>
+      </div>
+    </div>
+
+    <div class="container" id="videoContainer">
+      <video id="video2" controls playsinline webkit-playsinline></video>
+      <video id="video1" playsinline webkit-playsinline muted></video>
+      <canvas id="outputCanvas"></canvas>
+
+      <!-- 修正アドバイス表示用のオーバーレイ -->
+      <div class="overlay-hud">
+        <div class="score-badge" id="matchScore">一致度: --%</div>
+        <div class="advice-box" id="adviceBox" style="display: none;"></div>
+      </div>
+    </div>
+
+    <div class="controls-card">
+      <button class="ios-btn" id="syncAudioBtn">🎵 音声を解析してタイミング自動同期</button>
+      
+      <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--ios-subtext);">
+        <span>同期ステータス</span>
+        <span id="syncStatus" style="color: var(--ios-yellow);">未同期</span>
+      </div>
+
+      <hr style="border: 0; border-top: 0.5px solid rgba(255,255,255,0.1); margin: 0;">
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span>判定の感度 (許容角度差)</span>
+          <span id="thresholdVal">25°</span>
+        </div>
+        <input type="range" id="thresholdRange" min="10" max="45" step="1" value="25">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span>参考動画の透明度</span>
+          <span id="opacityVal">40%</span>
+        </div>
+        <input type="range" id="opacityRange" min="0" max="1" step="0.05" value="0.4">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const video1 = document.getElementById('video1');
+    const video2 = document.getElementById('video2');
+    const container = document.getElementById('videoContainer');
+    const canvasElement = document.getElementById('outputCanvas');
+    const canvasCtx = canvasElement.getContext('2d');
+    
+    const videoInput1 = document.getElementById('videoInput1');
+    const videoInput2 = document.getElementById('videoInput2');
+    const fileName1 = document.getElementById('fileName1');
+    const fileName2 = document.getElementById('fileName2');
+    const syncAudioBtn = document.getElementById('syncAudioBtn');
+    const syncStatus = document.getElementById('syncStatus');
+    const thresholdRange = document.getElementById('thresholdRange');
+    const thresholdVal = document.getElementById('thresholdVal');
+    const opacityRange = document.getElementById('opacityRange');
+    const opacityVal = document.getElementById('opacityVal');
+    const matchScore = document.getElementById('matchScore');
+    const adviceBox = document.getElementById('adviceBox');
+
+    let isProcessing = false;
+    let url1 = null, url2 = null;
+    let landmarks1 = null, landmarks2 = null;
+    let angleThreshold = 25;
+    let audioOffset = 0;
+
+    let currentTransform = { x: 0, y: 0, scale: 1, angle: 0 };
+    const SMOOTH_FACTOR_POS = 0.12;
+    const SMOOTH_FACTOR_SCALE = 0.05;
+
+    const pose = new Pose({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}` });
+    pose.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+
+    function calculateAngle(p1, p2, p3) {
+      if (!p1 || !p2 || !p3) return null;
+      const radians = Math.atan2(p3.y - p2.y, p3.x - p2.x) - Math.atan2(p1.y - p2.y, p1.x - p2.x);
+      let angle = Math.abs((radians * 180.0) / Math.PI);
+      if (angle > 180.0) angle = 360.0 - angle;
+      return angle;
+    }
+
+    // チェック対象の関節とインデックス
+    const jointConfigs = [
+      { name: "左肘", centerIdx: 13, points: [11, 13, 15], connection: [13, 15] },
+      { name: "右肘", centerIdx: 14, points: [12, 14, 16], connection: [14, 16] },
+      { name: "左肩", centerIdx: 11, points: [13, 11, 23], connection: [11, 13] },
+      { name: "右肩", centerIdx: 12, points: [12, 14, 24], connection: [12, 14] },
+      { name: "左膝", centerIdx: 25, points: [23, 25, 27], connection: [25, 27] },
+      { name: "右膝", centerIdx: 26, points: [24, 26, 28], connection: [26, 28] }
+    ];
+
+    function drawComparison() {
+      const w = canvasElement.width;
+      const h = canvasElement.height;
+
+      // 1. 重ね合わせ位置計算
+      if (landmarks1 && landmarks2 &&
+          landmarks1[11] && landmarks1[12] && landmarks1[23] && landmarks1[24] &&
+          landmarks2[11] && landmarks2[12] && landmarks2[23] && landmarks2[24]) {
+
+        const hip1 = { x: (landmarks1[23].x + landmarks1[24].x) / 2, y: (landmarks1[23].y + landmarks1[24].y) / 2 };
+        const hip2 = { x: (landmarks2[23].x + landmarks2[24].x) / 2, y: (landmarks2[23].y + landmarks2[24].y) / 2 };
+
+        const dist1 = Math.hypot(landmarks1[11].x - landmarks1[12].x, landmarks1[11].y - landmarks1[12].y);
+        const dist2 = Math.hypot(landmarks2[11].x - landmarks2[12].x, landmarks2[11].y - landmarks2[12].y);
+
+        const shoulderAngle1 = Math.atan2(landmarks1[12].y - landmarks1[11].y, landmarks1[12].x - landmarks1[11].x);
+        const shoulderAngle2 = Math.atan2(landmarks2[12].y - landmarks2[11].y, landmarks2[12].x - landmarks2[11].x);
+
+        if (dist1 > 0.05 && dist2 > 0.05) {
+          let targetScale = dist2 / dist1;
+          const minAllowedScale = currentTransform.scale * 0.7;
+          const maxAllowedScale = currentTransform.scale * 1.3;
+          targetScale = Math.max(minAllowedScale, Math.min(maxAllowedScale, targetScale));
+
+          const targetX = (hip2.x - hip1.x) * w;
+          const targetY = (hip2.y - hip1.y) * h;
+          
+          let diffAngle = (shoulderAngle2 - shoulderAngle1) * (180 / Math.PI);
+          if (diffAngle > 15) diffAngle = 15;
+          if (diffAngle < -15) diffAngle = -15;
+
+          currentTransform.x += (targetX - currentTransform.x) * SMOOTH_FACTOR_POS;
+          currentTransform.y += (targetY - currentTransform.y) * SMOOTH_FACTOR_POS;
+          currentTransform.scale += (targetScale - currentTransform.scale) * SMOOTH_FACTOR_SCALE;
+          currentTransform.angle += (diffAngle - currentTransform.angle) * SMOOTH_FACTOR_POS;
+        }
+      }
+
+      video1.style.transform = `translate(${currentTransform.x}px, ${currentTransform.y}px) rotate(${currentTransform.angle}deg) scale(${currentTransform.scale})`;
+
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, w, h);
+
+      // 2. 関節判定 & テキストフィードバックの準備
+      const badJoints = [];
+      const badPointsToHighlight = [];
+      let totalJoints = 0;
+      let matchedJoints = 0;
+
+      if (landmarks2 && landmarks1) {
+        jointConfigs.forEach(joint => {
+          const a1 = calculateAngle(landmarks1[joint.points[0]], landmarks1[joint.points[1]], landmarks1[joint.points[2]]);
+          const a2 = calculateAngle(landmarks2[joint.points[0]], landmarks2[joint.points[1]], landmarks2[joint.points[2]]);
+
+          if (a1 !== null && a2 !== null) {
+            totalJoints++;
+            const diff = a2 - a1; // 正なら曲げ過ぎ/開き過ぎ
+            if (Math.abs(diff) > angleThreshold) {
+              const stateText = diff > 0 ? "開きすぎ" : "曲げすぎ";
+              badJoints.push(`⚠️ ${joint.name} (${stateText})`);
+              badPointsToHighlight.push(landmarks2[joint.centerIdx]);
+            } else {
+              matchedJoints++;
+            }
+          }
+        });
+
+        // スコア計算と表示更新
+        if (totalJoints > 0) {
+          const score = Math.round((matchedJoints / totalJoints) * 100);
+          matchScore.textContent = `一致度: ${score}%`;
+          matchScore.style.color = score > 80 ? 'var(--ios-green)' : (score > 50 ? 'var(--ios-yellow)' : 'var(--ios-red)');
+        }
+
+        // アドバイスUI更新
+        if (badJoints.length > 0) {
+          adviceBox.style.display = 'flex';
+          adviceBox.innerHTML = badJoints.map(j => `<div class="advice-item">${j}</div>`).join('');
+        } else {
+          adviceBox.style.display = 'none';
+        }
+      }
+
+      // 3. 練習動画(video2) の骨格描画
+      if (landmarks2) {
+        POSE_CONNECTIONS.forEach(([i, j]) => {
+          const pA = landmarks2[i];
+          const pB = landmarks2[j];
+          if (pA && pB) {
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(pA.x * w, pA.y * h);
+            canvasCtx.lineTo(pB.x * w, pB.y * h);
+            canvasCtx.strokeStyle = '#30D158';
+            canvasCtx.lineWidth = 3;
+            canvasCtx.stroke();
+          }
+        });
+
+        // ズレている関節に警告リングを描画
+        badPointsToHighlight.forEach(pt => {
+          if (pt) {
+            canvasCtx.beginPath();
+            canvasCtx.arc(pt.x * w, pt.y * h, 14, 0, 2 * Math.PI);
+            canvasCtx.strokeStyle = '#FF453A';
+            canvasCtx.lineWidth = 4;
+            canvasCtx.stroke();
+
+            canvasCtx.beginPath();
+            canvasCtx.arc(pt.x * w, pt.y * h, 6, 0, 2 * Math.PI);
+            canvasCtx.fillStyle = '#FF453A';
+            canvasCtx.fill();
+          }
+        });
+      }
+
+      // 4. 参考動画(video1) の青骨格描画
+      if (landmarks1) {
+        canvasCtx.save();
+        canvasCtx.translate(w / 2 + currentTransform.x, h / 2 + currentTransform.y);
+        canvasCtx.rotate((currentTransform.angle * Math.PI) / 180);
+        canvasCtx.scale(currentTransform.scale, currentTransform.scale);
+        canvasCtx.translate(-w / 2, -h / 2);
+
+        drawConnectors(canvasCtx, landmarks1, POSE_CONNECTIONS, { color: '#0A84FF', lineWidth: 3 });
+        drawLandmarks(canvasCtx, landmarks1, { color: '#0A84FF', lineWidth: 1, radius: 3 });
+        canvasCtx.restore();
+      }
+
+      canvasCtx.restore();
+    }
+
+    async function renderSingleFrame() {
+      if (video2.readyState >= 2) {
+        pose.onResults(res => { landmarks2 = res.poseLandmarks; });
+        await pose.send({ image: video2 });
+      } else { landmarks2 = null; }
+
+      if (video1.readyState >= 2) {
+        pose.onResults(res => { landmarks1 = res.poseLandmarks; });
+        await pose.send({ image: video1 });
+      } else { landmarks1 = null; }
+
+      drawComparison();
+    }
+
+    async function processVideoFrame() {
+      if (video2.paused || video2.ended) {
+        isProcessing = false;
+        return;
+      }
+      isProcessing = true;
+
+      let expectedTime = video2.currentTime + audioOffset;
+      if (Math.abs(video1.currentTime - expectedTime) > 0.1 && expectedTime >= 0) {
+        video1.currentTime = expectedTime;
+      }
+
+      await renderSingleFrame();
+
+      if (!video2.paused && !video2.ended) {
+        requestAnimationFrame(processVideoFrame);
+      } else {
+        isProcessing = false;
+      }
+    }
+
+    // 音声自動同期
+    async function syncAudio() {
+      if (!url1 || !url2) { alert("両方の動画を選択してください。"); return; }
+      syncStatus.textContent = "解析中...";
+      
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const fetchAudio = async (url) => {
+          const res = await fetch(url);
+          const buf = await res.arrayBuffer();
+          return await audioCtx.decodeAudioData(buf);
+        };
+
+        const [buf1, buf2] = await Promise.all([fetchAudio(url1), fetchAudio(url2)]);
+        const data1 = buf1.getChannelData(0);
+        const data2 = buf2.getChannelData(0);
+        const sampleRate = buf1.sampleRate;
+        const searchRange = Math.min(15 * sampleRate, data1.length, data2.length);
+
+        let max1 = 0, idx1 = 0, max2 = 0, idx2 = 0;
+        for (let i = 0; i < searchRange; i++) {
+          if (Math.abs(data1[i]) > max1) { max1 = Math.abs(data1[i]); idx1 = i; }
+          if (Math.abs(data2[i]) > max2) { max2 = Math.abs(data2[i]); idx2 = i; }
+        }
+
+        audioOffset = (idx1 - idx2) / sampleRate;
+        syncStatus.textContent = `完了 (差: ${audioOffset.toFixed(2)}s)`;
+        syncStatus.style.color = "var(--ios-green)";
+        alignVideoTime();
+      } catch (err) {
+        syncStatus.textContent = "解析失敗";
+        syncStatus.style.color = "var(--ios-red)";
+        console.error(err);
+      }
+    }
+
+    function alignVideoTime() {
+      let targetTime = video2.currentTime + audioOffset;
+      if (targetTime >= 0 && targetTime <= video1.duration) {
+        video1.currentTime = targetTime;
+      }
+    }
+
+    videoInput1.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (url1) URL.revokeObjectURL(url1);
+        url1 = URL.createObjectURL(file);
+        video1.src = url1;
+        fileName1.textContent = file.name;
+        syncStatus.textContent = "未同期";
+        syncStatus.style.color = "var(--ios-yellow)";
+        audioOffset = 0;
+      }
+    });
+
+    videoInput2.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (url2) URL.revokeObjectURL(url2);
+        url2 = URL.createObjectURL(file);
+        video2.src = url2;
+        fileName2.textContent = file.name;
+        syncStatus.textContent = "未同期";
+        syncStatus.style.color = "var(--ios-yellow)";
+        audioOffset = 0;
+      }
+    });
+
+    video2.addEventListener('loadedmetadata', () => {
+      canvasElement.width = video2.videoWidth;
+      canvasElement.height = video2.videoHeight;
+      if (video2.videoWidth && video2.videoHeight) {
+        container.style.aspectRatio = `${video2.videoWidth} / ${video2.videoHeight}`;
+      }
+    });
+
+    video2.addEventListener('play', () => {
+      alignVideoTime();
+      video1.play().catch(() => {});
+      if (!isProcessing) processVideoFrame();
+    });
+
+    video2.addEventListener('pause', () => { video1.pause(); });
+    video2.addEventListener('seeking', () => { alignVideoTime(); });
+    video2.addEventListener('seeked', () => {
+      alignVideoTime();
+      if (video2.paused) renderSingleFrame();
+    });
+
+    syncAudioBtn.addEventListener('click', syncAudio);
+
+    thresholdRange.addEventListener('input', (e) => {
+      angleThreshold = parseFloat(e.target.value);
+      thresholdVal.textContent = `${angleThreshold}°`;
+      if (video2.paused) drawComparison();
+    });
+
+    opacityRange.addEventListener('input', (e) => {
+      video1.style.opacity = e.target.value;
+      opacityVal.textContent = `${Math.round(e.target.value * 100)}%`;
+    });
+  </script>
+</body>
+</html>
