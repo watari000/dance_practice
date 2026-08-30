@@ -13,7 +13,7 @@
   <!-- ホーム画面追加用アイコン -->
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230b0d14'/%3E%3Cstop offset='100%25' stop-color='%231a1d28'/%3E%3C/linearGradient%3E%3ClinearGradient id='g1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300f2fe'/%3E%3Cstop offset='100%25' stop-color='%234facfe'/%3E%3C/linearGradient%3E%3ClinearGradient id='g2' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300ff87'/%3E%3Cstop offset='100%25' stop-color='%2360efff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='120' fill='url(%23bg)'/%3E%3Crect x='8' y='8' width='496' height='496' rx='112' fill='none' stroke='rgba(255,255,255,0.08)' stroke-width='4'/%3E%3Cg transform='translate(256, 256)'%3E%3Ccircle r='180' fill='none' stroke='url(%23g1)' stroke-width='3' opacity='0.3' stroke-dasharray='12 8'/%3E%3Cpath d='M-60,-120 C-20,-140 40,-100 20,-40 C0,20 80,60 100,120' fill='none' stroke='url(%23g1)' stroke-width='28' stroke-linecap='round'/%3E%3Cpath d='M-100,-80 C-40,-100 20,-60 0,0 C-20,60 40,100 60,140' fill='none' stroke='url(%23g2)' stroke-width='16' stroke-linecap='round' opacity='0.85'/%3E%3Ccircle cx='20' cy='-110' r='18' fill='%2300f2fe'/%3E%3Ccircle cx='0' cy='-70' r='12' fill='%2300ff87'/%3E%3C/g%3E%3C/svg%3E">
 
-  <title>DANCE TRACE v1.0.6</title>
+  <title>DANCE TRACE v1.0.7</title>
   <style>
     :root {
       --bg-color: #0d0e12;
@@ -159,7 +159,7 @@
       height: 100%;
       background: #000000;
       border-radius: 12px;
-      overflow: hidden; /* 枠外への溢れを制御 */
+      overflow: hidden;
       border: 0.5px solid var(--card-border);
       touch-action: none;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
@@ -168,12 +168,11 @@
     .view-box:active { cursor: grabbing; }
     .view-box.locked { cursor: default; }
 
-    /* トリミング（切り欠き）を解除し、元の全体アスペクト比を維持して拡大縮小・移動可能に */
     .view-box video {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      object-fit: contain; /* object-fit: cover から contain に変更 */
+      object-fit: contain;
       transform-origin: center center;
       will-change: transform;
       pointer-events: none;
@@ -197,7 +196,6 @@
     }
     .locked .lock-indicator { display: flex; }
 
-    /* 中央再生ボタン */
     .play-overlay {
       position: absolute;
       top: 50%; left: 50%;
@@ -229,7 +227,6 @@
       transform: translate(-50%, -50%) scale(0.8);
     }
 
-    /* ダンサー用グリッド */
     .grid-overlay {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -269,7 +266,6 @@
       letter-spacing: 0.5px;
     }
 
-    /* タイムライン */
     .unified-timeline {
       background: var(--card-bg);
       backdrop-filter: blur(20px);
@@ -309,7 +305,6 @@
       box-shadow: 0 0 10px var(--accent-neon);
     }
 
-    /* 右側サイドバー */
     .sidebar-controls {
       width: 160px;
       display: flex;
@@ -405,7 +400,6 @@
       min-height: 14px;
     }
 
-    /* モーダル */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100dvh;
@@ -502,7 +496,7 @@
   <div class="header">
     <div class="header-title-container">
       <div class="header-title">DANCE TRACE</div>
-      <span class="version-tag">v1.0.6</span>
+      <span class="version-tag">v1.0.7</span>
     </div>
     <button class="btn-help" id="helpBtn" title="ヘルプ">
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
@@ -519,7 +513,8 @@
           <div class="grid-overlay"></div>
           <div class="grid-center-line-v"></div>
           <div class="grid-center-line-h"></div>
-          <video id="video1" playsinline webkit-playsinline></video>
+          <!-- iOS用 インライン自動再生属性の厳格指定 -->
+          <video id="video1" playsinline webkit-playsinline x5-playsinline muted></video>
         </div>
 
         <div class="view-box" id="box2">
@@ -528,7 +523,7 @@
           <div class="grid-overlay"></div>
           <div class="grid-center-line-v"></div>
           <div class="grid-center-line-h"></div>
-          <video id="video2" playsinline webkit-playsinline></video>
+          <video id="video2" playsinline webkit-playsinline x5-playsinline></video>
         </div>
 
         <div class="play-overlay" id="playOverlay">
@@ -576,7 +571,6 @@
     </div>
   </div>
 
-  <!-- ヘルプモーダル -->
   <div class="modal-overlay" id="guideModal">
     <div class="modal-card">
       <div class="modal-title">DANCE TRACE の使い方</div>
@@ -665,21 +659,26 @@
       videoEl.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
     }
 
+    // iOS Safari準拠の直列安全再生ロジック
     async function togglePlay() {
-      if (!url1 && !url2) { alert("動画を選択してください"); return; }
+      if (!video1.src && !video2.src) { alert("動画を選択してください"); return; }
 
       const isPaused = (video1.src && video1.paused) || (video2.src && video2.paused);
 
       if (isPaused) {
         alignVideoTime();
         try {
-          const promises = [];
-          if (video1.src) promises.push(video1.play());
-          if (video2.src) promises.push(video2.play());
-          await Promise.all(promises);
+          // iOSブロック回避のため直列（順番）に再生
+          if (video1.src) {
+            video1.muted = true; // iOS制限解除のため一旦ミュート再生
+            await video1.play();
+          }
+          if (video2.src) {
+            await video2.play();
+          }
           updatePlayButtonUI(true);
         } catch (err) {
-          console.error("再生エラー:", err);
+          console.error("iOS再生エラー制御:", err);
         }
       } else {
         if (video1.src) video1.pause();
@@ -732,7 +731,6 @@
       v.addEventListener('play', () => updatePlayButtonUI(true));
     });
 
-    // タッチ・マウス制御
     function setupTouchControl(boxEl, videoEl, transformObj) {
       let activePointers = new Map();
       let initialDistance = 0;
@@ -858,6 +856,7 @@
 
       const objectUrl = URL.createObjectURL(fileObj);
       videoEl.src = objectUrl;
+      videoEl.load(); // iOS用にメタデータロードを強制
 
       videoEl.onloadedmetadata = () => {
         const mainVideo = video2.duration ? video2 : video1;
@@ -887,7 +886,6 @@
       }
     });
 
-    // 長尺動画（3分以上）にも対応した高速音声自動同期エンジン
     async function syncAudio() {
       if (!fileObj1 || !fileObj2) { alert("両方の動画を選択してください"); return; }
       syncStatus.textContent = "音声解析中...";
@@ -906,7 +904,6 @@
           const d2 = buf2.getChannelData(0);
           const sampleRate = buf1.sampleRate;
 
-          // 冒頭〜最大15秒間の区間を解析対象にして高速処理を実現
           const targetDuration = Math.min(15, buf1.duration, buf2.duration);
           const samplesToAnalyze = Math.floor(targetDuration * sampleRate);
           const step = Math.floor(sampleRate / 400);
@@ -925,7 +922,7 @@
 
           audioCtx.close();
 
-          const maxShift = Math.floor(6 * (sampleRate / step)); // 最大±6秒のズレまで対応
+          const maxShift = Math.floor(6 * (sampleRate / step));
           let bestOffset = 0;
           let maxCorrelation = -Infinity;
 
