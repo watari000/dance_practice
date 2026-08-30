@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- iOS Safari用 フルスクリーン（PWA）設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Pose Align">
+
   <title>Pose Align Viewer - Unified Player</title>
   <style>
     :root {
@@ -34,6 +40,38 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+    }
+
+    /* 縦画面用アラートカバー */
+    .portrait-warning {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(20px);
+      z-index: 999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .portrait-warning svg {
+      width: 64px; height: 64px;
+      fill: var(--accent-blue);
+      animation: rotateHint 2s infinite ease-in-out;
+    }
+
+    @keyframes rotateHint {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(-90deg); }
+    }
+
+    /* 縦画面時に表示 */
+    @media screen and (orientation: portrait) {
+      .portrait-warning { display: flex; }
     }
 
     /* ヘッダー */
@@ -137,7 +175,7 @@
     }
     .locked .lock-indicator { display: flex; }
 
-    /* 中央再生ボタン（iOSスタイル） */
+    /* 中央再生ボタン */
     .play-overlay {
       position: absolute;
       top: 50%; left: 50%;
@@ -288,7 +326,6 @@
       text-overflow: ellipsis;
     }
 
-    /* iOSスタイルのボタンデザイン */
     .btn {
       height: 40px;
       padding: 0 10px;
@@ -347,7 +384,7 @@
       min-height: 14px;
     }
 
-    /* iOSスタイル モーダル（チュートリアル） */
+    /* モーダル */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
@@ -433,6 +470,13 @@
 </head>
 <body>
 
+  <!-- 縦向き時に表示するカバー指示 -->
+  <div class="portrait-warning">
+    <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5c-.47-4.82-3.48-8.88-7.66-10.74l.19 2.26zm1.02 18.96c-3.27-1.55-5.61-4.72-5.97-8.48h-1.5c.47 4.82 3.48 8.88 7.66 10.74l-.19-2.26zM17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+    <div style="font-weight: 700; font-size: 16px;">画面を横向きにしてください</div>
+    <div style="font-size: 12px; color: var(--text-sub);">iPhoneの「画面縦ロック」を解除して<br>端末を横にしてご使用ください</div>
+  </div>
+
   <div class="header">
     <div class="header-title">
       <span style="color: var(--accent-blue);">●</span> POSE ALIGN
@@ -484,7 +528,6 @@
       </div>
     </div>
 
-    <!-- 右側サイドバー -->
     <div class="sidebar-controls">
       <div class="file-card">
         <div class="file-header" style="color: var(--accent-blue);">
@@ -522,7 +565,6 @@
     </div>
   </div>
 
-  <!-- 初回案内モーダル（ナビゲーター） -->
   <div class="modal-overlay" id="guideModal">
     <div class="modal-card">
       <div class="modal-title">
@@ -585,7 +627,6 @@
     const transform1 = { x: 0, y: 0, scale: 1 };
     const transform2 = { x: 0, y: 0, scale: 1 };
 
-    // ナビゲーター表示制御
     helpBtn.addEventListener('click', () => guideModal.classList.add('show'));
     closeModalBtn.addEventListener('click', () => guideModal.classList.remove('show'));
 
