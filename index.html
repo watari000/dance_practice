@@ -11,7 +11,7 @@
 
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2308090d'/%3E%3Cstop offset='50%25' stop-color='%23121520'/%3E%3Cstop offset='100%25' stop-color='%231a0b2e'/%3E%3C/linearGradient%3E%3ClinearGradient id='neon1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300f2fe'/%3E%3Cstop offset='100%25' stop-color='%237000ff'/%3E%3C/linearGradient%3E%3ClinearGradient id='neon2' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%2300ff87'/%3E%3Cstop offset='100%25' stop-color='%2360efff'/%3E%3C/linearGradient%3E%3Cfilter id='glow' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeGaussianBlur stdDeviation='12' result='blur'/%3E%3CfeMerge%3E%3CfeMergeNode in='blur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='512' height='512' rx='120' fill='url(%23bg)'/%3E%3Crect x='6' y='6' width='500' height='500' rx='114' fill='none' stroke='url(%23neon1)' stroke-width='4' opacity='0.4'/%3E%3Cpath d='M80 400 L120 400 M140 400 L160 400 M350 400 L370 400 M390 400 L430 400' stroke='url(%23neon1)' stroke-width='6' stroke-linecap='round' opacity='0.3'/%3E%3Cg filter='url(%23glow)'%3E%3Cpath d='M 120 380 Q 200 340 256 360 T 390 320' fill='none' stroke='url(%23neon2)' stroke-width='8' stroke-linecap='round' opacity='0.7'/%3E%3Cpath d='M-30 0 L10 20 L20 -10' transform='translate(380,310) rotate(15)' fill='none' stroke='url(%23neon2)' stroke-width='6' stroke-linecap='round'/%3E%3Cg transform='translate(256, 240)' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='20' cy='-110' r='24' fill='url(%23neon1)' stroke='none'/%3E%3Cpath d='M-10 -75 L20 -50 L70 -80 M20 -50 L50 -20 L90 -10' stroke='url(%23neon1)' stroke-width='22'/%3E%3Cpath d='M20 -50 L-30 -20 L-80 -40' stroke='url(%23neon1)' stroke-width='22'/%3E%3Cpath d='M-30 -20 L-20 50 L-70 110' stroke='url(%23neon1)' stroke-width='22'/%3E%3Cpath d='M-20 50 L40 70 L80 120' stroke='url(%23neon1)' stroke-width='20'/%3E%3Cpath d='M-10 -75 L20 -50 L70 -80' stroke='%23ffffff' stroke-width='8' opacity='0.9'/%3E%3Cpath d='M-30 -20 L-20 50 L-70 110' stroke='%23ffffff' stroke-width='8' opacity='0.9'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
 
-  <title>DANCE TRACE v1.8.0 (iOS Smooth Dual Play)</title>
+  <title>DANCE TRACE v1.9.0</title>
   <style>
     :root {
       --bg-color: #0d0e12;
@@ -98,11 +98,24 @@
     .view-box {
       position: relative; width: 100%; height: 100%;
       background: #000000; border-radius: 12px; overflow: hidden;
-      border: 0.5px solid var(--card-border); touch-action: none;
+      border: 2px solid var(--card-border); touch-action: none;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6); cursor: grab;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .view-box:active { cursor: grabbing; }
     .view-box.locked { cursor: default; }
+
+    /* 外枠のネオン発光スタイル（ズレ発生時） */
+    .view-box.drift-alert {
+      border-color: var(--accent-red) !important;
+      box-shadow: 0 0 20px rgba(255, 0, 85, 0.8), inset 0 0 15px rgba(255, 0, 85, 0.5) !important;
+      animation: alertPulse 0.8s infinite alternate ease-in-out;
+    }
+
+    @keyframes alertPulse {
+      0% { box-shadow: 0 0 12px rgba(255, 0, 85, 0.6), inset 0 0 8px rgba(255, 0, 85, 0.3); }
+      100% { box-shadow: 0 0 28px rgba(255, 0, 85, 1), inset 0 0 22px rgba(255, 0, 85, 0.7); }
+    }
 
     .view-box canvas {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -121,6 +134,15 @@
       display: none; align-items: center; gap: 4px; color: var(--accent-yellow);
     }
     .locked .lock-indicator { display: flex; }
+
+    .drift-alert-badge {
+      position: absolute; bottom: 10px; right: 10px; z-index: 7;
+      font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px;
+      background: var(--accent-red); color: #fff;
+      box-shadow: 0 0 10px rgba(255, 0, 85, 0.8);
+      display: none; align-items: center; gap: 4px;
+    }
+    .drift-alert .drift-alert-badge { display: flex; }
 
     .play-overlay {
       position: absolute; top: 50%; left: 50%;
@@ -287,7 +309,7 @@
     .modal-overlay.show { opacity: 1; pointer-events: auto; }
 
     .modal-card {
-      width: 380px; max-width: 90vw; max-height: 85dvh;
+      width: 400px; max-width: 90vw; max-height: 85dvh;
       background: rgba(22, 24, 31, 0.95); border: 0.5px solid var(--card-border);
       border-radius: 18px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
       display: flex; flex-direction: column; gap: 14px; overflow-y: auto;
@@ -302,6 +324,15 @@
       align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;
     }
 
+    .security-notice {
+      background: rgba(0, 255, 135, 0.08); border: 1px solid rgba(0, 255, 135, 0.3);
+      border-radius: 10px; padding: 10px; font-size: 10px; line-height: 1.5; color: var(--accent-green);
+    }
+
+    .history-item { border-bottom: 0.5px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
+    .history-ver { font-weight: 800; font-size: 12px; color: var(--accent-neon); margin-bottom: 2px; }
+    .history-desc { font-size: 11px; color: #d1d1d6; line-height: 1.4; }
+
     .modal-close-btn {
       background: linear-gradient(135deg, var(--accent-dancer), var(--accent-neon));
       color: #000; border: none; border-radius: 10px; height: 38px;
@@ -314,7 +345,7 @@
   <div class="header">
     <div class="header-title-container">
       <div class="header-title">DANCE TRACE</div>
-      <span class="version-tag" id="versionTag">v1.8.0</span>
+      <span class="version-tag" id="versionTag">v1.9.0</span>
     </div>
     <button class="btn-help" id="helpBtn">
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
@@ -336,6 +367,7 @@
         <div class="view-box" id="box2">
           <div class="view-badge" style="color: var(--accent-green);">USER (自分)</div>
           <div class="lock-indicator">固定中</div>
+          <div class="drift-alert-badge" id="driftAlertBadge">⚠️ ズレ発生中</div>
           <div class="grid-overlay"></div>
           <div class="grid-center-line-v"></div>
           <div class="grid-center-line-h"></div>
@@ -396,24 +428,61 @@
     </div>
   </div>
 
+  <!-- ヘルプ用モーダル -->
   <div class="modal-overlay" id="guideModal">
     <div class="modal-card">
-      <div class="modal-title">DANCE TRACE の使い方</div>
+      <div class="modal-title">DANCE TRACE 使い方ガイド</div>
       <div class="step-list">
         <div class="step-item">
           <div class="step-num">1</div>
-          <div><b>動画の読み込み</b><br>左右の枠から動画を選択します。</div>
+          <div><b>動画の読み込み</b><br>左右のボタンから「お手本(REF)」と「自分(USER)」の動画を選択します。</div>
         </div>
         <div class="step-item">
           <div class="step-num">2</div>
-          <div><b>⚡ 音声自動同期</b><br>ビート音を解析して同期します。ズレが大きいポイントには赤丸を表示します。</div>
+          <div><b>⚡ 音声自動同期</b><br>ビート音を波形解析してズレを調整します。ズレが大きいポイントにはシークバー上に赤いピンが表示されます。</div>
         </div>
         <div class="step-item">
           <div class="step-num">3</div>
-          <div><b>動画内のズレ丸表示</b><br>シークバーの赤丸をタップすると2秒前から再生。ズレタイミングに達すると動画内にターゲット丸印が表示されます。</div>
+          <div><b>外枠発光でズレを確認</b><br>再生中、リズムがズレているタイミングになると<b>自分（USER）側の動画枠全体がネオンピンクに点滅発光</b>します。画面を遮らずフォームを確認できます。</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div><b>位置・倍率の調整</b><br>画面をドラッグ・ピンチアウトしてダンサーの位置や大きさを揃えることができます。</div>
         </div>
       </div>
+
+      <div class="security-notice">
+        <b>🔒 プライバシー・セキュリティについて</b><br>
+        選択された動画ファイルおよび解析された音声データは、<b>外部サーバーやクラウドへ送信・アップロードされることは一切ありません。</b>すべての処理はお使いの端末（ブラウザ内）でのみ完了します。
+      </div>
+
       <button class="modal-close-btn" id="closeGuideModalBtn">閉じる</button>
+    </div>
+  </div>
+
+  <!-- バージョン履歴モーダル -->
+  <div class="modal-overlay" id="versionModal">
+    <div class="modal-card">
+      <div class="modal-title">アップデート履歴</div>
+      <div class="step-list">
+        <div class="history-item">
+          <div class="history-ver">v1.9.0（最新）</div>
+          <div class="history-desc">ズレ発生時の通知表現を画面内の円から「外枠全体ネオン発光」に変更。動画視認性を大幅向上。プライバシー仕様を明記。</div>
+        </div>
+        <div class="history-item">
+          <div class="history-ver">v1.8.0</div>
+          <div class="history-desc">iOS (iPhone/Safari) での同時再生時のカクつき・同期ズレ補正アルゴリズムを最適化。動画内ターゲット表示を追加。</div>
+        </div>
+        <div class="history-item">
+          <div class="history-ver">v1.5.0</div>
+          <div class="history-desc">Web Audio API による波形音解析アルゴリズムを導入。ビートのズレを自動検出してシークバーにマーカー表示。</div>
+        </div>
+        <div class="history-item">
+          <div class="history-ver">v1.0.0</div>
+          <div class="history-desc">2画面完全同一同期プレイヤ一初期リリース。タッチ操作による位置・倍率変更機能。</div>
+        </div>
+      </div>
+      <button class="modal-close-btn" id="closeVersionModalBtn">閉じる</button>
     </div>
   </div>
 
@@ -442,9 +511,14 @@
     const driftMarkerContainer = document.getElementById('driftMarkerContainer');
     const box1 = document.getElementById('box1');
     const box2 = document.getElementById('box2');
+    const driftAlertBadge = document.getElementById('driftAlertBadge');
+
     const guideModal = document.getElementById('guideModal');
+    const versionModal = document.getElementById('versionModal');
     const helpBtn = document.getElementById('helpBtn');
+    const versionTag = document.getElementById('versionTag');
     const closeGuideModalBtn = document.getElementById('closeGuideModalBtn');
+    const closeVersionModalBtn = document.getElementById('closeVersionModalBtn');
 
     let url1 = null, url2 = null;
     let fileObj1 = null, fileObj2 = null;
@@ -453,8 +527,8 @@
     let isLocked = false;
     let isUserSeeking = false;
     let animFrameId = null;
-    let detectedDriftPoints = []; // 検出されたズレ地点配列
-    let lastSyncCorrectionTime = 0; // iOSでのカクつき防止用タイマー
+    let detectedDriftPoints = []; 
+    let lastSyncCorrectionTime = 0;
 
     video1.muted = false;
     video2.muted = true;
@@ -490,6 +564,9 @@
     helpBtn.addEventListener('click', () => guideModal.classList.add('show'));
     closeGuideModalBtn.addEventListener('click', () => guideModal.classList.remove('show'));
 
+    versionTag.addEventListener('click', () => versionModal.classList.add('show'));
+    closeVersionModalBtn.addEventListener('click', () => versionModal.classList.remove('show'));
+
     document.querySelectorAll('.speed-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
@@ -521,8 +598,7 @@
       }
     }
 
-    // 動画フレームの描画および画面上の赤丸（ターゲット）描画
-    function drawFrame(ctx, video, sizeInfo, transform, isUserVideo = false) {
+    function drawFrame(ctx, video, sizeInfo, transform) {
       if (!video.videoWidth || !video.videoHeight || sizeInfo.width === 0 || sizeInfo.height === 0) return;
 
       const dpr = sizeInfo.dpr;
@@ -540,43 +616,31 @@
       ctx.scale(transform.scale, transform.scale);
       ctx.drawImage(video, -dw / 2, -dh / 2, dw, dh);
 
-      // 動画内（USER側）のズレ位置に画面上のターゲット赤丸を描画
-      if (isUserVideo && detectedDriftPoints.length > 0) {
-        const curTime = video1.currentTime;
-        // 現在の再生時刻がズレ検出ポイントの前後0.8秒以内にあるか判定
-        const activeDrift = detectedDriftPoints.find(p => Math.abs(curTime - p.timeSec) < 0.8);
-
-        if (activeDrift) {
-          const radius = Math.min(dw, dh) * 0.22; // 画面サイズに合わせた動的サイズ
-          
-          ctx.beginPath();
-          ctx.arc(0, 0, radius, 0, Math.PI * 2);
-          ctx.lineWidth = 6;
-          ctx.strokeStyle = '#ff0055';
-          ctx.shadowColor = '#ff0055';
-          ctx.shadowBlur = 20;
-          ctx.stroke();
-
-          // 内側に番号テキストを表示
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 24px -apple-system, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.shadowBlur = 0;
-          ctx.fillText(`! ズレ ${activeDrift.index}`, 0, 0);
-        }
-      }
-
       ctx.restore();
     }
 
+    // 外枠ネオン発光のON/OFF判定ロジック
+    function checkDriftAlert() {
+      if (detectedDriftPoints.length > 0) {
+        const curTime = video1.currentTime;
+        const activeDrift = detectedDriftPoints.find(p => Math.abs(curTime - p.timeSec) < 0.8);
+
+        if (activeDrift) {
+          box2.classList.add('drift-alert');
+          driftAlertBadge.textContent = `⚠️ ズレポイント ${activeDrift.index}`;
+          return;
+        }
+      }
+      box2.classList.remove('drift-alert');
+    }
+
     function renderOnce() {
-      if (video1.src) drawFrame(ctx1, video1, box1Size, transform1, false);
-      if (video2.src) drawFrame(ctx2, video2, box2Size, transform2, true);
+      if (video1.src) drawFrame(ctx1, video1, box1Size, transform1);
+      if (video2.src) drawFrame(ctx2, video2, box2Size, transform2);
+      checkDriftAlert();
       updateTimeline();
     }
 
-    // iOSでのカクつきを防ぐマイルドな同期制御（1秒に1回以上の極端なseek処理を行わない）
     function syncVideoDrift() {
       if (!video1.src || !video2.src || video1.paused || video2.paused) return;
 
@@ -584,7 +648,6 @@
       const expectedTime2 = video1.currentTime - audioOffset;
       const diff = video2.currentTime - expectedTime2;
 
-      // 0.15秒以上のズレがあり、かつ前回の修正から1.2秒以上経っている場合のみ同期
       if (Math.abs(diff) > 0.15 && (now - lastSyncCorrectionTime > 1200)) {
         if (expectedTime2 >= 0 && expectedTime2 <= video2.duration) {
           video2.currentTime = expectedTime2;
@@ -599,9 +662,10 @@
       if (isPlaying) {
         syncVideoDrift();
 
-        if (video1.src) drawFrame(ctx1, video1, box1Size, transform1, false);
-        if (video2.src) drawFrame(ctx2, video2, box2Size, transform2, true);
+        if (video1.src) drawFrame(ctx1, video1, box1Size, transform1);
+        if (video2.src) drawFrame(ctx2, video2, box2Size, transform2);
 
+        checkDriftAlert();
         updateTimeline();
 
         if ('requestVideoFrameCallback' in video1) {
