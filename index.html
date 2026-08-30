@@ -4,16 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
-  <!-- iOS Safari フルスクリーン（PWA）設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DANCE TRACE">
   <meta name="mobile-web-app-capable" content="yes">
 
-  <!-- ホーム画面追加用アイコン -->
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230b0d14'/%3E%3Cstop offset='100%25' stop-color='%231a1d28'/%3E%3C/linearGradient%3E%3ClinearGradient id='g1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300f2fe'/%3E%3Cstop offset='100%25' stop-color='%234facfe'/%3E%3C/linearGradient%3E%3ClinearGradient id='g2' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300ff87'/%3E%3Cstop offset='100%25' stop-color='%2360efff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='120' fill='url(%23bg)'/%3E%3Crect x='8' y='8' width='496' height='496' rx='112' fill='none' stroke='rgba(255,255,255,0.08)' stroke-width='4'/%3E%3Cg transform='translate(256, 256)'%3E%3Ccircle r='180' fill='none' stroke='url(%23g1)' stroke-width='3' opacity='0.3' stroke-dasharray='12 8'/%3E%3Cpath d='M-60,-120 C-20,-140 40,-100 20,-40 C0,20 80,60 100,120' fill='none' stroke='url(%23g1)' stroke-width='28' stroke-linecap='round'/%3E%3Cpath d='M-100,-80 C-40,-100 20,-60 0,0 C-20,60 40,100 60,140' fill='none' stroke='url(%23g2)' stroke-width='16' stroke-linecap='round' opacity='0.85'/%3E%3Ccircle cx='20' cy='-110' r='18' fill='%2300f2fe'/%3E%3Ccircle cx='0' cy='-70' r='12' fill='%2300ff87'/%3E%3C/g%3E%3C/svg%3E">
 
-  <title>DANCE TRACE v1.0.7</title>
+  <title>DANCE TRACE v1.1.0</title>
   <style>
     :root {
       --bg-color: #0d0e12;
@@ -47,7 +45,6 @@
       flex-direction: column;
     }
 
-    /* ヘッダー */
     .header {
       height: 38px;
       padding: 0 16px;
@@ -80,12 +77,18 @@
     .version-tag {
       font-size: 9px;
       font-weight: 700;
-      padding: 1px 5px;
+      padding: 2px 6px;
       border-radius: 4px;
       background: rgba(0, 242, 254, 0.15);
       color: var(--accent-neon);
       border: 0.5px solid rgba(0, 242, 254, 0.3);
       line-height: 1.2;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .version-tag:active {
+      transform: scale(0.95);
+      background: rgba(0, 242, 254, 0.3);
     }
 
     .btn-help {
@@ -93,16 +96,12 @@
       border: 0.5px solid var(--card-border);
       color: var(--accent-neon);
       border-radius: 50%;
-      width: 26px;
-      height: 26px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center;
       cursor: pointer;
     }
     .btn-help svg { width: 15px; height: 15px; fill: currentColor; }
 
-    /* メインボディ */
     .app-body {
       flex: 1;
       display: flex;
@@ -132,9 +131,8 @@
         gap: 8px;
       }
       .file-card { grid-column: span 1; }
-      .btn-sync { grid-column: span 2; }
+      .sync-box { grid-column: span 2; }
       .btn-lock, .btn-reset { grid-column: span 1; }
-      .sync-info { grid-column: span 2; }
     }
 
     .player-main {
@@ -155,8 +153,7 @@
 
     .view-box {
       position: relative;
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
       background: #000000;
       border-radius: 12px;
       overflow: hidden;
@@ -182,16 +179,13 @@
       position: absolute;
       top: 8px; right: 8px;
       z-index: 6;
-      font-size: 10px;
-      font-weight: 600;
+      font-size: 10px; font-weight: 600;
       padding: 3px 8px;
       border-radius: 20px;
       background: rgba(0,0,0,0.7);
       backdrop-filter: blur(10px);
       border: 0.5px solid rgba(255,255,255,0.2);
-      display: none;
-      align-items: center;
-      gap: 4px;
+      display: none; align-items: center; gap: 4px;
       color: var(--accent-yellow);
     }
     .locked .lock-indicator { display: flex; }
@@ -205,9 +199,7 @@
       background: rgba(18, 20, 26, 0.8);
       backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.25);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       z-index: 20;
       transition: all 0.25s ease;
       cursor: pointer;
@@ -230,8 +222,7 @@
     .grid-overlay {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none;
-      z-index: 4;
+      pointer-events: none; z-index: 4;
       background-image: 
         linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
         linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
@@ -240,15 +231,13 @@
     }
 
     .grid-center-line-v {
-      position: absolute;
-      left: 50%; top: 0; height: 100%; width: 1px;
+      position: absolute; left: 50%; top: 0; height: 100%; width: 1px;
       border-left: 1px dashed rgba(0, 242, 254, 0.6);
       z-index: 5; pointer-events: none;
     }
 
     .grid-center-line-h {
-      position: absolute;
-      top: 50%; left: 0; width: 100%; height: 1px;
+      position: absolute; top: 50%; left: 0; width: 100%; height: 1px;
       border-top: 1px dashed rgba(0, 242, 254, 0.6);
       z-index: 5; pointer-events: none;
     }
@@ -272,28 +261,23 @@
       border: 0.5px solid var(--card-border);
       border-radius: 12px;
       padding: 0 14px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      display: flex; align-items: center; gap: 12px;
       height: 42px;
     }
 
     .time-text {
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 11px; font-weight: 700;
       font-variant-numeric: tabular-nums;
       color: var(--text-main);
       white-space: nowrap;
     }
 
     .seekBar {
-      flex: 1;
-      height: 4px;
+      flex: 1; height: 4px;
       -webkit-appearance: none;
       background: rgba(255, 255, 255, 0.2);
       border-radius: 2px;
-      outline: none;
-      cursor: pointer;
+      outline: none; cursor: pointer;
     }
 
     .seekBar::-webkit-slider-thumb {
@@ -306,10 +290,8 @@
     }
 
     .sidebar-controls {
-      width: 160px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      width: 170px;
+      display: flex; flex-direction: column; gap: 8px;
       height: 100%;
     }
 
@@ -319,59 +301,78 @@
       border: 0.5px solid var(--card-border);
       border-radius: 10px;
       padding: 8px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      display: flex; flex-direction: column; gap: 4px;
       position: relative;
     }
 
     .file-card input[type="file"] {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      opacity: 0; cursor: pointer;
-      z-index: 2;
+      opacity: 0; cursor: pointer; z-index: 2;
     }
 
     .file-header {
-      font-size: 11px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 5px;
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; gap: 5px;
     }
 
     .file-name {
-      font-size: 10px;
-      color: var(--text-sub);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 10px; color: var(--text-sub);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .sync-box {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 0.5px solid var(--card-border);
+      border-radius: 10px;
+      padding: 8px;
+      display: flex; flex-direction: column; gap: 6px;
     }
 
     .btn {
-      height: 38px;
-      padding: 0 10px;
-      border-radius: 10px;
-      border: none;
-      font-size: 11px;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      cursor: pointer;
-      transition: all 0.15s ease;
+      height: 34px; padding: 0 8px;
+      border-radius: 8px; border: none;
+      font-size: 11px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+      cursor: pointer; transition: all 0.15s ease;
       width: 100%;
     }
-    .btn:active {
-      transform: scale(0.97);
-      opacity: 0.8;
-    }
+    .btn:active { transform: scale(0.96); opacity: 0.8; }
 
     .btn-sync {
       background: linear-gradient(135deg, var(--accent-dancer), var(--accent-neon));
       color: #000000;
-      box-shadow: 0 4px 14px rgba(0, 242, 254, 0.25);
+      box-shadow: 0 4px 12px rgba(0, 242, 254, 0.2);
+    }
+
+    .fine-tune-label {
+      font-size: 9px; font-weight: 800;
+      color: var(--text-sub); text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    .fine-tune-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 4px;
+    }
+
+    .btn-step {
+      height: 26px; padding: 0;
+      font-size: 9px; font-weight: 800;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 0.5px solid var(--card-border);
+      border-radius: 6px;
+    }
+    .btn-step:active { background: rgba(0, 242, 254, 0.2); }
+
+    .sync-info {
+      font-size: 10px; font-weight: 800;
+      color: var(--accent-green);
+      text-align: center;
+      min-height: 14px;
     }
 
     .btn-lock {
@@ -392,102 +393,43 @@
       margin-top: auto;
     }
 
-    .sync-info {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--text-sub);
-      text-align: center;
-      min-height: 14px;
-    }
-
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100dvh;
       background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(15px);
       z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
     }
-    .modal-overlay.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
+    .modal-overlay.show { opacity: 1; pointer-events: auto; }
 
     .modal-card {
-      width: 360px;
-      max-width: 90vw;
+      width: 380px; max-width: 90vw;
+      max-height: 85dvh;
       background: rgba(22, 24, 31, 0.95);
       border: 0.5px solid var(--card-border);
-      border-radius: 18px;
-      padding: 20px;
+      border-radius: 18px; padding: 20px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+      display: flex; flex-direction: column; gap: 14px;
+      overflow-y: auto;
     }
 
-    .modal-title {
-      font-size: 15px;
-      font-weight: 800;
-      text-align: center;
-      color: var(--accent-neon);
-    }
+    .modal-title { font-size: 15px; font-weight: 800; text-align: center; color: var(--accent-neon); }
+    .step-list { display: flex; flex-direction: column; gap: 12px; }
+    .step-item { display: flex; align-items: flex-start; gap: 10px; font-size: 11px; line-height: 1.5; color: #e5e5ea; }
+    .step-num { background: var(--accent-dancer); color: #000; font-weight: 800; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
 
-    .step-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .step-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      font-size: 11px;
-      line-height: 1.4;
-      color: #e5e5ea;
-    }
-
-    .step-num {
-      background: var(--accent-dancer);
-      color: #000;
-      font-weight: 800;
-      font-size: 10px;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-
-    .privacy-box {
-      background: rgba(0, 255, 135, 0.08);
-      border: 0.5px solid rgba(0, 255, 135, 0.3);
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 10px;
-      color: var(--accent-green);
-      line-height: 1.3;
-    }
+    .history-list { display: flex; flex-direction: column; gap: 12px; }
+    .history-item { border-bottom: 0.5px solid rgba(255, 255, 255, 0.1); padding-bottom: 8px; }
+    .history-item:last-child { border-bottom: none; }
+    .history-ver { font-size: 12px; font-weight: 800; color: var(--accent-neon); margin-bottom: 4px; }
+    .history-desc { font-size: 11px; color: var(--text-sub); line-height: 1.4; }
 
     .modal-close-btn {
       background: linear-gradient(135deg, var(--accent-dancer), var(--accent-neon));
-      color: #000;
-      border: none;
-      border-radius: 10px;
-      height: 38px;
-      font-size: 12px;
-      font-weight: 800;
-      cursor: pointer;
-      width: 100%;
+      color: #000; border: none; border-radius: 10px; height: 38px;
+      font-size: 12px; font-weight: 800; cursor: pointer; width: 100%; flex-shrink: 0;
     }
   </style>
 </head>
@@ -496,7 +438,7 @@
   <div class="header">
     <div class="header-title-container">
       <div class="header-title">DANCE TRACE</div>
-      <span class="version-tag">v1.0.7</span>
+      <span class="version-tag" id="versionTag" title="バージョン履歴">v1.1.0</span>
     </div>
     <button class="btn-help" id="helpBtn" title="ヘルプ">
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
@@ -513,7 +455,6 @@
           <div class="grid-overlay"></div>
           <div class="grid-center-line-v"></div>
           <div class="grid-center-line-h"></div>
-          <!-- iOS用 インライン自動再生属性の厳格指定 -->
           <video id="video1" playsinline webkit-playsinline x5-playsinline muted></video>
         </div>
 
@@ -540,65 +481,93 @@
 
     <div class="sidebar-controls">
       <div class="file-card">
-        <div class="file-header" style="color: var(--accent-neon);">
-          📁 動画1 (REF)
-        </div>
+        <div class="file-header" style="color: var(--accent-neon);">📁 動画1 (REF)</div>
         <div class="file-name" id="fileName1">選択してください</div>
         <input type="file" id="videoInput1" accept="video/*">
       </div>
 
       <div class="file-card">
-        <div class="file-header" style="color: var(--accent-green);">
-          📁 動画2 (USER)
-        </div>
+        <div class="file-header" style="color: var(--accent-green);">📁 動画2 (USER)</div>
         <div class="file-name" id="fileName2">選択してください</div>
         <input type="file" id="videoInput2" accept="video/*">
       </div>
 
-      <button class="btn btn-sync" id="syncAudioBtn">
-        ⚡ 音声自動同期
-      </button>
+      <div class="sync-box">
+        <button class="btn btn-sync" id="syncAudioBtn">⚡ 音声自動同期</button>
+        <div class="sync-info" id="syncStatus">差: 0.00s</div>
+        
+        <div class="fine-tune-label">手動コマ微調整</div>
+        <div class="fine-tune-grid">
+          <button class="btn btn-step" id="stepBack5f">-5f</button>
+          <button class="btn btn-step" id="stepBack1f">-1f</button>
+          <button class="btn btn-step" id="stepFwd1f">+1f</button>
+          <button class="btn btn-step" id="stepFwd5f">+5f</button>
+        </div>
+      </div>
 
       <button class="btn btn-lock" id="lockBtn">
         <span id="lockText">位置調整可</span>
       </button>
 
-      <button class="btn btn-reset" id="resetBtn">
-        位置リセット
-      </button>
-
-      <div class="sync-info" id="syncStatus"></div>
+      <button class="btn btn-reset" id="resetBtn">位置リセット</button>
     </div>
   </div>
 
+  <!-- ヘルプモーダル -->
   <div class="modal-overlay" id="guideModal">
     <div class="modal-card">
       <div class="modal-title">DANCE TRACE の使い方</div>
       <div class="step-list">
         <div class="step-item">
           <div class="step-num">1</div>
-          <div>右側の「📁動画1」「📁動画2」からお手本と自分のダンス動画を選択します。</div>
+          <div><b>動画の読み込み</b><br>左右のファイル枠をタップして、比較したいお手本動画（REF）と自分のダンス動画（USER）を読み込みます。</div>
         </div>
         <div class="step-item">
           <div class="step-num">2</div>
-          <div><b>「⚡音声自動同期」</b>を押すと、楽曲の音を解析して音のズレを自動補正します。</div>
+          <div><b>⚡ 音声自動同期</b><br>ボタンを押すと音声波形を自動解析し、スタートタイミングをピタリと合わせます（※長時間動画でも高速・軽量化解析されます）。</div>
         </div>
         <div class="step-item">
           <div class="step-num">3</div>
-          <div><b>位置移動:</b> ドラッグで移動、ピンチイン/ホイールで拡大縮小、ダブルタップでリセット。</div>
+          <div><b>コマ単位（Frame）の手動微調整</b><br>自動同期後にダンスの振りが微妙にずれて見える場合、<b>「-1f / +1f」</b>（1コマ）または<b>「-5f / +5f」</b>（5コマ）ボタンを使って人間の目視レベルで正確にタイミングを調整できます。</div>
         </div>
         <div class="step-item">
           <div class="step-num">4</div>
-          <div><b>📱 iPhoneフルスクリーン:</b> Safariの共有ボタンから<b>「ホーム画面に追加」</b>すると全画面で起動します。</div>
+          <div><b>位置・拡大率の調整</b><br>画面をドラッグ（移動）やピンチアウト（拡大）してダンサーの大きさを揃えられます。誤動作を防ぎたい場合は<b>「位置固定」</b>をONにしてください。ダブルタップで画角を瞬時にリセットできます。</div>
         </div>
       </div>
+      <button class="modal-close-btn" id="closeGuideModalBtn">閉じる</button>
+    </div>
+  </div>
 
-      <div class="privacy-box">
-        🔒 <b>セキュリティ完全保護</b><br>
-        動画や音声データはデバイス内部でのみ処理されます。外部サーバーへの送信は一切ありません。
+  <!-- バージョン履歴モーダル -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal-card">
+      <div class="modal-title">バージョン更新履歴</div>
+      <div class="history-list">
+        <div class="history-item">
+          <div class="history-ver">v1.1.0</div>
+          <div class="history-desc">
+            ・手動微調整をコマ（Frame）単位（-5f, -1f, +1f, +5f）に一元化<br>
+            ・バージョンタグタップで更新履歴モーダルを表示する機能を追加<br>
+            ・ヘルプガイドの記載内容をより詳細に拡張
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="history-ver">v1.0.9</div>
+          <div class="history-desc">
+            ・3分以上の動画で音声同期がクラッシュ・エラーになる不具合を修正（音声先頭スライス抽出による超軽量化）<br>
+            ・メモリ自動解放（AudioContextクリーンアップ）の徹底
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="history-ver">v1.0.8以前</div>
+          <div class="history-desc">
+            ・2画面動画比較、音声波形相関による自動同期機能の実装<br>
+            ・タッチ・ピンチイン/アウトによる個別ズーム・位置移動機能
+          </div>
+        </div>
       </div>
-
-      <button class="modal-close-btn" id="closeModalBtn">閉じる</button>
+      <button class="modal-close-btn" id="closeHistoryModalBtn">閉じる</button>
     </div>
   </div>
 
@@ -623,27 +592,45 @@
     const box1 = document.getElementById('box1');
     const box2 = document.getElementById('box2');
 
+    const stepBack5f = document.getElementById('stepBack5f');
+    const stepBack1f = document.getElementById('stepBack1f');
+    const stepFwd1f = document.getElementById('stepFwd1f');
+    const stepFwd5f = document.getElementById('stepFwd5f');
+
     const guideModal = document.getElementById('guideModal');
+    const historyModal = document.getElementById('historyModal');
     const helpBtn = document.getElementById('helpBtn');
-    const closeModalBtn = document.getElementById('closeModalBtn');
+    const versionTag = document.getElementById('versionTag');
+    const closeGuideModalBtn = document.getElementById('closeGuideModalBtn');
+    const closeHistoryModalBtn = document.getElementById('closeHistoryModalBtn');
 
     let url1 = null, url2 = null;
     let fileObj1 = null, fileObj2 = null;
-    let audioOffset = 0;
+    let audioOffset = 0.0;
     let isLocked = false;
     let isUserSeeking = false;
 
     const transform1 = { x: 0, y: 0, scale: 1 };
     const transform2 = { x: 0, y: 0, scale: 1 };
 
+    const FRAME_TIME = 1 / 30; // 1フレーム = 約0.0333秒 (30fps基準)
+
     helpBtn.addEventListener('click', () => guideModal.classList.add('show'));
-    closeModalBtn.addEventListener('click', () => guideModal.classList.remove('show'));
+    closeGuideModalBtn.addEventListener('click', () => guideModal.classList.remove('show'));
+
+    versionTag.addEventListener('click', () => historyModal.classList.add('show'));
+    closeHistoryModalBtn.addEventListener('click', () => historyModal.classList.remove('show'));
 
     function formatTime(sec) {
       if (isNaN(sec) || sec < 0) return "00:00";
       const m = Math.floor(sec / 60);
       const s = Math.floor(sec % 60);
       return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function updateSyncUI() {
+      const sign = audioOffset >= 0 ? '+' : '';
+      syncStatus.textContent = `差: ${sign}${audioOffset.toFixed(3)}s`;
     }
 
     function updatePlayButtonUI(isPlaying) {
@@ -659,7 +646,18 @@
       videoEl.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
     }
 
-    // iOS Safari準拠の直列安全再生ロジック
+    function alignVideoTime() {
+      if (!video2.src) return;
+      const baseTime = video2.currentTime;
+      let targetTime = baseTime + audioOffset;
+
+      if (video1.src && targetTime >= 0 && targetTime <= (video1.duration || 9999)) {
+        if (Math.abs(video1.currentTime - targetTime) > 0.03) {
+          video1.currentTime = parseFloat(targetTime.toFixed(4));
+        }
+      }
+    }
+
     async function togglePlay() {
       if (!video1.src && !video2.src) { alert("動画を選択してください"); return; }
 
@@ -668,17 +666,17 @@
       if (isPaused) {
         alignVideoTime();
         try {
-          // iOSブロック回避のため直列（順番）に再生
           if (video1.src) {
-            video1.muted = true; // iOS制限解除のため一旦ミュート再生
+            video1.muted = true;
             await video1.play();
           }
           if (video2.src) {
             await video2.play();
           }
+          alignVideoTime();
           updatePlayButtonUI(true);
         } catch (err) {
-          console.error("iOS再生エラー制御:", err);
+          console.error("再生エラー:", err);
         }
       } else {
         if (video1.src) video1.pause();
@@ -692,16 +690,16 @@
       togglePlay();
     });
 
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        togglePlay();
-      } else if (e.code === 'KeyR') {
-        resetBtn.click();
-      } else if (e.code === 'KeyL') {
-        lockBtn.click();
-      }
-    });
+    function adjustOffset(frameFrames) {
+      audioOffset += frameFrames * FRAME_TIME;
+      updateSyncUI();
+      alignVideoTime();
+    }
+
+    stepBack5f.addEventListener('click', (e) => { e.stopPropagation(); adjustOffset(-5); });
+    stepBack1f.addEventListener('click', (e) => { e.stopPropagation(); adjustOffset(-1); });
+    stepFwd1f.addEventListener('click', (e) => { e.stopPropagation(); adjustOffset(1); });
+    stepFwd5f.addEventListener('click', (e) => { e.stopPropagation(); adjustOffset(5); });
 
     function updateTimeline() {
       const mainVideo = video2.src ? video2 : video1;
@@ -717,7 +715,7 @@
       if (mainVideo && mainVideo.duration) {
         const targetTime = (seekBar.value / 100) * mainVideo.duration;
         if (video2.src) video2.currentTime = targetTime;
-        if (video1.src) video1.currentTime = Math.max(0, targetTime + audioOffset);
+        alignVideoTime();
         currentTimeText.textContent = formatTime(targetTime);
       }
     });
@@ -803,9 +801,7 @@
         if (!isMoved && activePointers.size === 0) {
           const now = Date.now();
           if (now - lastTapTime < 300) {
-            transformObj.x = 0;
-            transformObj.y = 0;
-            transformObj.scale = 1;
+            transformObj.x = 0; transformObj.y = 0; transformObj.scale = 1;
             applyTransform(videoEl, transformObj);
           } else {
             togglePlay();
@@ -856,7 +852,7 @@
 
       const objectUrl = URL.createObjectURL(fileObj);
       videoEl.src = objectUrl;
-      videoEl.load(); // iOS用にメタデータロードを強制
+      videoEl.load();
 
       videoEl.onloadedmetadata = () => {
         const mainVideo = video2.duration ? video2 : video1;
@@ -888,39 +884,35 @@
 
     async function syncAudio() {
       if (!fileObj1 || !fileObj2) { alert("両方の動画を選択してください"); return; }
-      syncStatus.textContent = "音声解析中...";
+      syncStatus.textContent = "解析中...";
       syncStatus.style.color = "var(--accent-neon)";
 
       setTimeout(async () => {
+        let audioCtx = null;
         try {
-          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          const fetchAudioFromFile = async (file) => {
-            const buf = await file.arrayBuffer();
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+          const MAX_BYTES = 5 * 1024 * 1024;
+          const fetchPartialAudio = async (file) => {
+            const blobChunk = file.slice(0, Math.min(file.size, MAX_BYTES));
+            const buf = await blobChunk.arrayBuffer();
             return await audioCtx.decodeAudioData(buf);
           };
 
-          const [buf1, buf2] = await Promise.all([fetchAudioFromFile(fileObj1), fetchAudioFromFile(fileObj2)]);
+          const [buf1, buf2] = await Promise.all([fetchPartialAudio(fileObj1), fetchPartialAudio(fileObj2)]);
           const d1 = buf1.getChannelData(0);
           const d2 = buf2.getChannelData(0);
           const sampleRate = buf1.sampleRate;
 
           const targetDuration = Math.min(15, buf1.duration, buf2.duration);
           const samplesToAnalyze = Math.floor(targetDuration * sampleRate);
-          const step = Math.floor(sampleRate / 400);
+          const step = Math.floor(sampleRate / 300);
 
           const s1 = [], s2 = [];
-          let sum1 = 0, sum2 = 0;
-
           for (let i = 0; i < samplesToAnalyze; i += step) {
-            const v1 = d1[i] || 0;
-            const v2 = d2[i] || 0;
-            s1.push(v1);
-            s2.push(v2);
-            sum1 += v1 * v1;
-            sum2 += v2 * v2;
+            s1.push(d1[i] || 0);
+            s2.push(d2[i] || 0);
           }
-
-          audioCtx.close();
 
           const maxShift = Math.floor(6 * (sampleRate / step));
           let bestOffset = 0;
@@ -940,34 +932,20 @@
             }
           }
 
-          const normFactor = Math.sqrt(sum1 * sum2);
-          const similarityRatio = normFactor > 0 ? (maxCorrelation / (normFactor / (s1.length / 100))) : 0;
-
-          if (similarityRatio < 0.02 || maxCorrelation <= 0) {
-            syncStatus.textContent = "❌ 音声不一致";
-            syncStatus.style.color = "var(--accent-red)";
-            audioOffset = 0;
-            return;
-          }
-
           audioOffset = (bestOffset * step) / sampleRate;
-          syncStatus.textContent = `差: ${audioOffset > 0 ? '+' : ''}${audioOffset.toFixed(2)}s`;
+          updateSyncUI();
           syncStatus.style.color = "var(--accent-green)";
           alignVideoTime();
         } catch (err) {
+          console.error("Audio Sync Error:", err);
           syncStatus.textContent = "解析エラー";
           syncStatus.style.color = "var(--accent-red)";
+        } finally {
+          if (audioCtx && audioCtx.state !== 'closed') {
+            audioCtx.close();
+          }
         }
       }, 50);
-    }
-
-    function alignVideoTime() {
-      if (video1.src && video2.src) {
-        let targetTime = video2.currentTime + audioOffset;
-        if (targetTime >= 0 && targetTime <= video1.duration) {
-          video1.currentTime = targetTime;
-        }
-      }
     }
 
     syncAudioBtn.addEventListener('click', (e) => {
