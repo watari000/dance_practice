@@ -13,7 +13,7 @@
   <!-- ホーム画面追加用アイコン (Data URI SVG) -->
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230d0e12'/%3E%3Cg transform='translate(256, 256)'%3E%3Ccircle r='210' fill='none' stroke='%2300f2fe' stroke-width='8' opacity='0.25'/%3E%3Cpath d='M-140,-100 L0,-100 L60,0 L0,100 L-140,100' fill='none' stroke='%2300f2fe' stroke-width='32' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-20,-100 L120,-100 L180,0 L120,100 L-20,100' fill='none' stroke='%2300ff87' stroke-width='32' stroke-linecap='round' stroke-linejoin='round' opacity='0.9'/%3E%3Cline x1='-180' y1='0' x2='180' y2='0' stroke='%23ffea00' stroke-width='12' stroke-dasharray='16,12' opacity='0.8'/%3E%3C/g%3E%3C/svg%3E">
 
-  <title>DANCE TRACE - Dance Comparison Player v1.0.0</title>
+  <title>DANCE TRACE - Dance Comparison Player v1.0.1</title>
   <style>
     :root {
       --bg-color: #0d0e12;
@@ -507,7 +507,7 @@
   <div class="header">
     <div class="header-title-container">
       <div class="header-title">DANCE TRACE</div>
-      <span class="version-tag">v1.0.0</span>
+      <span class="version-tag">v1.0.1</span>
     </div>
     <button class="btn-help" id="helpBtn" title="ヘルプ">
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
@@ -597,7 +597,7 @@
         </div>
         <div class="step-item">
           <div class="step-num">3</div>
-          <div>画面ドラッグで人物の位置を重ね合わせたり、中央十字ガイドに合わせて動きをチェックできます。</div>
+          <div>画面の<b>1本指ドラッグで移動</b>、<b>2本指ピンチで拡大縮小</b>して人物の大きさや位置を正確に合わせられます。ダブルタップでリセットできます。</div>
         </div>
         <div class="step-item">
           <div class="step-num">4</div>
@@ -693,9 +693,7 @@
       }
     }
 
-    document.getElementById('videoArea').addEventListener('click', togglePlay);
-
-    // 単発枠描画（描画の軽量化）
+    // 単発枠描画
     function renderFrame() {
       const w1 = canvas1.width || 300, h1 = canvas1.height || 400;
       ctx1.clearRect(0, 0, w1, h1);
@@ -768,31 +766,96 @@
       v.addEventListener('seeked', renderFrame);
     });
 
+    // -------------------------------------------------------------
+    // タッチ・ピンチイン/アウト・マルチタッチ完全対応ジェスチャーエンジン
+    // -------------------------------------------------------------
     function setupTouchControl(boxEl, transformObj) {
-      let isDragging = false;
+      let activePointers = new Map();
+      let initialDistance = 0;
+      let startScale = 1;
       let startX = 0, startY = 0;
+      let isMoved = false;
+      let lastTapTime = 0;
+
+      function getDistance(p1, p2) {
+        const dx = p1.clientX - p2.clientX;
+        const dy = p1.clientY - p2.clientY;
+        return Math.hypot(dx, dy);
+      }
 
       boxEl.addEventListener('pointerdown', (e) => {
         if (isLocked) return;
-        isDragging = true;
-        startX = e.clientX - transformObj.x;
-        startY = e.clientY - transformObj.y;
         boxEl.setPointerCapture(e.pointerId);
+        activePointers.set(e.pointerId, { clientX: e.clientX, clientY: e.clientY });
+
+        if (activePointers.size === 1) {
+          isMoved = false;
+          startX = e.clientX - transformObj.x;
+          startY = e.clientY - transformObj.y;
+        } else if (activePointers.size === 2) {
+          const pts = Array.from(activePointers.values());
+          initialDistance = getDistance(pts[0], pts[1]);
+          startScale = transformObj.scale;
+        }
       });
 
       boxEl.addEventListener('pointermove', (e) => {
-        if (!isDragging || isLocked) return;
-        transformObj.x = e.clientX - startX;
-        transformObj.y = e.clientY - startY;
-        renderFrame();
+        if (isLocked || !activePointers.has(e.pointerId)) return;
+        activePointers.set(e.pointerId, { clientX: e.clientX, clientY: e.clientY });
+
+        if (activePointers.size === 1) {
+          // 1本指ドラッグ移動
+          const currentX = e.clientX - startX;
+          const currentY = e.clientY - startY;
+          if (Math.abs(currentX - transformObj.x) > 3 || Math.abs(currentY - transformObj.y) > 3) {
+            isMoved = true;
+          }
+          transformObj.x = currentX;
+          transformObj.y = currentY;
+          renderFrame();
+        } else if (activePointers.size === 2) {
+          // 2本指ピンチイン/ピンチアウト拡大縮小
+          isMoved = true;
+          const pts = Array.from(activePointers.values());
+          const dist = getDistance(pts[0], pts[1]);
+          if (initialDistance > 0) {
+            const factor = dist / initialDistance;
+            // 拡大率制限: 0.5倍 〜 4.0倍
+            transformObj.scale = Math.min(Math.max(startScale * factor, 0.5), 4.0);
+            renderFrame();
+          }
+        }
       });
 
-      const stopDrag = (e) => {
-        isDragging = false;
-        try { boxEl.releasePointerCapture(e.pointerId); } catch(err){}
+      const handlePointerUp = (e) => {
+        if (activePointers.has(e.pointerId)) {
+          activePointers.delete(e.pointerId);
+          try { boxEl.releasePointerCapture(e.pointerId); } catch(err){}
+        }
+
+        if (activePointers.size < 2) {
+          initialDistance = 0;
+        }
+
+        // タップ動作判定（ドラッグ操作がなく短時間タップの場合）
+        if (!isMoved && activePointers.size === 0) {
+          const now = Date.now();
+          if (now - lastTapTime < 300) {
+            // ダブルタップでその画面の位置・拡大率を初期化
+            transformObj.x = 0;
+            transformObj.y = 0;
+            transformObj.scale = 1;
+            renderFrame();
+          } else {
+            // シングルタップで再生 / 停止
+            togglePlay();
+          }
+          lastTapTime = now;
+        }
       };
-      boxEl.addEventListener('pointerup', stopDrag);
-      boxEl.addEventListener('pointercancel', stopDrag);
+
+      boxEl.addEventListener('pointerup', handlePointerUp);
+      boxEl.addEventListener('pointercancel', handlePointerUp);
     }
 
     setupTouchControl(box1, transform1);
@@ -800,8 +863,8 @@
 
     resetBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      transform1.x = 0; transform1.y = 0;
-      transform2.x = 0; transform2.y = 0;
+      transform1.x = 0; transform1.y = 0; transform1.scale = 1;
+      transform2.x = 0; transform2.y = 0; transform2.scale = 1;
       renderFrame();
     });
 
