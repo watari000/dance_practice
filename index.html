@@ -3,22 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Pose Sync Viewer with Feedback</title>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
-  
+  <title>Pose Align Viewer - Unified Player</title>
   <style>
     :root {
-      --ios-bg: #000000;
-      --ios-card: #1c1c1e;
-      --ios-card-secondary: #2c2c2e;
-      --ios-blue: #0a84ff;
-      --ios-green: #30d158;
-      --ios-red: #ff453a;
-      --ios-yellow: #ffd60a;
-      --ios-text: #ffffff;
-      --ios-subtext: #8e8e93;
+      --bg-color: #000000;
+      --card-bg: rgba(28, 28, 30, 0.85);
+      --card-border: rgba(255, 255, 255, 0.15);
+      --accent-blue: #0A84FF;
+      --accent-green: #30D158;
+      --accent-red: #FF453A;
+      --accent-yellow: #FFD60A;
+      --text-main: #FFFFFF;
+      --text-sub: #8E8E93;
     }
 
     * {
@@ -28,509 +24,847 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      background-color: var(--ios-bg);
-      color: var(--ios-text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
       margin: 0;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
     }
 
+    /* ヘッダー */
     .header {
-      width: 100%;
-      padding: 12px 20px;
-      text-align: center;
-      font-size: 17px;
-      font-weight: 600;
-      border-bottom: 0.5px solid rgba(255, 255, 255, 0.15);
-      background: rgba(28, 28, 30, 0.8);
+      height: 40px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(22, 22, 24, 0.8);
       backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      position: sticky;
-      top: 0;
+      border-bottom: 0.5px solid var(--card-border);
       z-index: 10;
     }
 
-    .app-content {
-      width: 100%;
-      max-width: 500px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .file-inputs {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      background: var(--ios-card);
-      padding: 12px;
-      border-radius: 12px;
-    }
-
-    .file-input-btn {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--ios-card-secondary);
-      padding: 12px 16px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 500;
-    }
-
-    .file-input-btn input[type="file"] {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      opacity: 0; cursor: pointer;
-    }
-
-    .file-label-badge {
-      font-size: 12px; padding: 4px 8px; border-radius: 6px; font-weight: 600;
-    }
-    .badge-ref { background: rgba(10, 132, 255, 0.2); color: #64d2ff; }
-    .badge-usr { background: rgba(48, 209, 88, 0.2); color: var(--ios-green); }
-
-    .container {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #000;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    }
-
-    video, canvas {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      object-fit: contain;
-    }
-
-    #video2 { z-index: 1; }
-    #video1 {
-      opacity: 0.4;
-      pointer-events: none;
-      z-index: 2;
-      transform-origin: center center;
-      will-change: transform;
-    }
-    #outputCanvas { pointer-events: none; z-index: 3; }
-
-    /* オーバーレイ：修正アドバイス UI */
-    .overlay-hud {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      z-index: 4;
-      pointer-events: none;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    .score-badge {
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(8px);
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--ios-green);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .advice-box {
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
-      padding: 8px 12px;
-      border-radius: 12px;
-      max-width: 60%;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      border: 1px solid rgba(255, 69, 58, 0.4);
-    }
-
-    .advice-item {
-      font-size: 12px;
+    .header-title {
+      font-size: 13px;
       font-weight: 600;
-      color: var(--ios-red);
+      letter-spacing: -0.2px;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     }
 
-    .controls-card {
-      background: var(--ios-card);
-      border-radius: 16px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .ios-btn {
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
+    .btn-help {
+      background: rgba(255, 255, 255, 0.12);
       border: none;
-      background-color: var(--ios-blue);
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
+      color: var(--accent-blue);
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
     }
+    .btn-help svg { width: 16px; height: 16px; fill: currentColor; }
 
-    .slider-group {
+    /* メインボディ */
+    .app-body {
+      flex: 1;
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      height: calc(100vh - 40px);
+    }
+
+    .player-main {
+      flex: 1;
       display: flex;
       flex-direction: column;
       gap: 8px;
+      height: 100%;
     }
 
-    .slider-header {
+    .split-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      position: relative;
+    }
+
+    .view-box {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 0.5px solid var(--card-border);
+      touch-action: none;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      cursor: grab;
+    }
+    .view-box:active { cursor: grabbing; }
+    .view-box.locked { cursor: default; }
+
+    .view-box video { display: none; }
+
+    .view-box canvas {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    .lock-indicator {
+      position: absolute;
+      top: 10px; right: 10px;
+      z-index: 6;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 20px;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(10px);
+      border: 0.5px solid rgba(255,255,255,0.2);
+      display: none;
+      align-items: center;
+      gap: 4px;
+    }
+    .locked .lock-indicator { display: flex; }
+
+    /* 中央再生ボタン（iOSスタイル） */
+    .play-overlay {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: rgba(30, 30, 32, 0.75);
+      backdrop-filter: blur(20px);
+      border: 0.5px solid rgba(255, 255, 255, 0.25);
       display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-      color: var(--ios-subtext);
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
 
-    input[type="range"] {
+    .play-overlay svg {
+      width: 26px; height: 26px;
+      fill: #fff;
+    }
+
+    .play-overlay.playing {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.7);
+    }
+
+    /* グリッド */
+    .grid-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 4;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+      background-size: 80px 80px;
+      background-position: center center;
+    }
+
+    .grid-center-line-h {
+      position: absolute;
+      top: 50%; left: 0; width: 100%; height: 1px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.5);
+      z-index: 5; pointer-events: none;
+    }
+    .grid-center-line-v {
+      position: absolute;
+      left: 50%; top: 0; height: 100%; width: 1px;
+      border-left: 1px dashed rgba(255, 255, 255, 0.5);
+      z-index: 5; pointer-events: none;
+    }
+
+    .view-badge {
+      position: absolute;
+      top: 10px; left: 10px;
+      z-index: 6;
+      font-size: 10px; font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      border: 0.5px solid rgba(255, 255, 255, 0.15);
+      letter-spacing: 0.5px;
+    }
+
+    /* 統合タイムライン */
+    .unified-timeline {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 0.5px solid var(--card-border);
+      border-radius: 12px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 44px;
+    }
+
+    .time-text {
+      font-size: 12px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    .seekBar {
+      flex: 1;
+      height: 4px;
       -webkit-appearance: none;
-      width: 100%; height: 4px;
+      background: rgba(255, 255, 255, 0.25);
       border-radius: 2px;
-      background: var(--ios-card-secondary);
       outline: none;
     }
 
-    input[type="range"]::-webkit-slider-thumb {
+    .seekBar::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 24px; height: 24px;
+      width: 18px; height: 18px;
       border-radius: 50%;
-      background: #ffffff;
+      background: #FFFFFF;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    /* 右側サイドバー */
+    .sidebar-controls {
+      width: 165px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: 100%;
+    }
+
+    .file-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 0.5px solid var(--card-border);
+      border-radius: 12px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+    }
+
+    .file-card input[type="file"] {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0; cursor: pointer;
+      z-index: 2;
+    }
+
+    .file-header {
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .file-name {
+      font-size: 10px;
+      color: var(--text-sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* iOSスタイルのボタンデザイン */
+    .btn {
+      height: 40px;
+      padding: 0 10px;
+      border-radius: 12px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      width: 100%;
+    }
+    .btn:active {
+      transform: scale(0.97);
+      opacity: 0.8;
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .btn-sync {
+      background: var(--accent-blue);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+    }
+
+    .btn-lock {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      border: 0.5px solid var(--card-border);
+    }
+    .btn-lock.active {
+      background: rgba(255, 214, 10, 0.2);
+      color: var(--accent-yellow);
+      border: 0.5px solid rgba(255, 214, 10, 0.4);
+    }
+
+    .btn-reset {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-sub);
+      border: 0.5px solid var(--card-border);
+      margin-top: auto;
+    }
+
+    .sync-info {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-sub);
+      text-align: center;
+      min-height: 14px;
+    }
+
+    /* iOSスタイル モーダル（チュートリアル） */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(15px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 320px;
+      background: rgba(30, 30, 35, 0.95);
+      border: 0.5px solid var(--card-border);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #E5E5EA;
+    }
+
+    .step-num {
+      background: var(--accent-blue);
+      color: #fff;
+      font-weight: 700;
+      font-size: 11px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .modal-close-btn {
+      background: var(--accent-blue);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      height: 38px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
     }
   </style>
 </head>
 <body>
 
-  <div class="header">ダンス骨格照合 & アドバイス</div>
+  <div class="header">
+    <div class="header-title">
+      <span style="color: var(--accent-blue);">●</span> POSE ALIGN
+    </div>
+    <button class="btn-help" id="helpBtn" title="使い方">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
+    </button>
+  </div>
 
-  <div class="app-content">
-    <div class="file-inputs">
-      <div class="file-input-btn">
-        <span id="fileName1">1. 参考動画を選択</span>
-        <span class="file-label-badge badge-ref">青骨格</span>
+  <div class="app-body">
+    <div class="player-main">
+      <div class="split-container" id="videoArea">
+        <div class="view-box" id="box1">
+          <div class="view-badge" style="color: var(--accent-blue);">REF</div>
+          <div class="lock-indicator">
+            <svg style="width:12px;height:12px;fill:var(--accent-yellow)" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+            固定中
+          </div>
+          <div class="grid-overlay"></div>
+          <div class="grid-center-line-h"></div>
+          <div class="grid-center-line-v"></div>
+          
+          <video id="video1" playsinline webkit-playsinline preload="auto" crossorigin="anonymous"></video>
+          <canvas id="canvas1"></canvas>
+        </div>
+
+        <div class="view-box" id="box2">
+          <div class="view-badge" style="color: var(--accent-green);">USER</div>
+          <div class="lock-indicator">
+            <svg style="width:12px;height:12px;fill:var(--accent-yellow)" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+            固定中
+          </div>
+          <div class="grid-overlay"></div>
+          <div class="grid-center-line-h"></div>
+          <div class="grid-center-line-v"></div>
+          <video id="video2" playsinline webkit-playsinline preload="auto" crossorigin="anonymous"></video>
+          <canvas id="canvas2"></canvas>
+        </div>
+
+        <div class="play-overlay" id="playOverlay">
+          <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+      </div>
+
+      <div class="unified-timeline">
+        <span class="time-text" id="currentTimeText">00:00</span>
+        <input type="range" class="seekBar" id="seekBar" value="0" min="0" max="100" step="0.1">
+        <span class="time-text" id="durationText" style="color: var(--text-sub);">00:00</span>
+      </div>
+    </div>
+
+    <!-- 右側サイドバー -->
+    <div class="sidebar-controls">
+      <div class="file-card">
+        <div class="file-header" style="color: var(--accent-blue);">
+          <svg style="width:14px;height:14px;fill:currentColor" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+          動画1 (REF)
+        </div>
+        <div class="file-name" id="fileName1">タップして選択</div>
         <input type="file" id="videoInput1" accept="video/*" playsinline>
       </div>
-      <div class="file-input-btn">
-        <span id="fileName2">2. 練習動画を選択</span>
-        <span class="file-label-badge badge-usr">土台</span>
+
+      <div class="file-card">
+        <div class="file-header" style="color: var(--accent-green);">
+          <svg style="width:14px;height:14px;fill:currentColor" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+          動画2 (USER)
+        </div>
+        <div class="file-name" id="fileName2">タップして選択</div>
         <input type="file" id="videoInput2" accept="video/*" playsinline>
       </div>
+
+      <button class="btn btn-sync" id="syncAudioBtn">
+        <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+        音声自動同期
+      </button>
+      <div class="sync-info" id="syncStatus"></div>
+
+      <button class="btn btn-lock" id="lockBtn">
+        <svg id="lockIcon" viewBox="0 0 24 24"><path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z"/></svg>
+        <span id="lockText">位置調整可</span>
+      </button>
+
+      <button class="btn btn-reset" id="resetBtn">
+        <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        位置リセット
+      </button>
     </div>
+  </div>
 
-    <div class="container" id="videoContainer">
-      <video id="video2" controls playsinline webkit-playsinline></video>
-      <video id="video1" playsinline webkit-playsinline muted></video>
-      <canvas id="outputCanvas"></canvas>
-
-      <!-- 修正アドバイス表示用のオーバーレイ -->
-      <div class="overlay-hud">
-        <div class="score-badge" id="matchScore">一致度: --%</div>
-        <div class="advice-box" id="adviceBox" style="display: none;"></div>
+  <!-- 初回案内モーダル（ナビゲーター） -->
+  <div class="modal-overlay" id="guideModal">
+    <div class="modal-card">
+      <div class="modal-title">
+        <span style="color: var(--accent-blue)">●</span> 使い方ナビゲーション
       </div>
-    </div>
-
-    <div class="controls-card">
-      <button class="ios-btn" id="syncAudioBtn">🎵 音声を解析してタイミング自動同期</button>
-      
-      <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--ios-subtext);">
-        <span>同期ステータス</span>
-        <span id="syncStatus" style="color: var(--ios-yellow);">未同期</span>
-      </div>
-
-      <hr style="border: 0; border-top: 0.5px solid rgba(255,255,255,0.1); margin: 0;">
-
-      <div class="slider-group">
-        <div class="slider-header">
-          <span>判定の感度 (許容角度差)</span>
-          <span id="thresholdVal">25°</span>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div>右側の「📁動画1」「📁動画2」をタップして比較したい2つの動画を選択します。</div>
         </div>
-        <input type="range" id="thresholdRange" min="10" max="45" step="1" value="25">
-      </div>
-
-      <div class="slider-group">
-        <div class="slider-header">
-          <span>参考動画の透明度</span>
-          <span id="opacityVal">40%</span>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div><b>「⚡音声自動同期」</b>を押すと、音声を解析して2つの動画のズレを瞬時に自動調整します。</div>
         </div>
-        <input type="range" id="opacityRange" min="0" max="1" step="0.05" value="0.4">
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div>画面タップで再生/一時停止。画面下部のタイムラインで<b>1つの動画のように操作</b>できます。指で動画を滑らせて位置合わせも可能です。</div>
+        </div>
       </div>
+      <button class="modal-close-btn" id="closeModalBtn">はじめる</button>
     </div>
   </div>
 
   <script>
     const video1 = document.getElementById('video1');
     const video2 = document.getElementById('video2');
-    const container = document.getElementById('videoContainer');
-    const canvasElement = document.getElementById('outputCanvas');
-    const canvasCtx = canvasElement.getContext('2d');
-    
+    const canvas1 = document.getElementById('canvas1');
+    const canvas2 = document.getElementById('canvas2');
+    const ctx1 = canvas1.getContext('2d');
+    const ctx2 = canvas2.getContext('2d');
+
     const videoInput1 = document.getElementById('videoInput1');
     const videoInput2 = document.getElementById('videoInput2');
     const fileName1 = document.getElementById('fileName1');
     const fileName2 = document.getElementById('fileName2');
     const syncAudioBtn = document.getElementById('syncAudioBtn');
+    const lockBtn = document.getElementById('lockBtn');
+    const lockIcon = document.getElementById('lockIcon');
+    const lockText = document.getElementById('lockText');
+    const resetBtn = document.getElementById('resetBtn');
     const syncStatus = document.getElementById('syncStatus');
-    const thresholdRange = document.getElementById('thresholdRange');
-    const thresholdVal = document.getElementById('thresholdVal');
-    const opacityRange = document.getElementById('opacityRange');
-    const opacityVal = document.getElementById('opacityVal');
-    const matchScore = document.getElementById('matchScore');
-    const adviceBox = document.getElementById('adviceBox');
+    const playOverlay = document.getElementById('playOverlay');
+    const playIcon = document.getElementById('playIcon');
+    const seekBar = document.getElementById('seekBar');
+    const currentTimeText = document.getElementById('currentTimeText');
+    const durationText = document.getElementById('durationText');
+    const box1 = document.getElementById('box1');
+    const box2 = document.getElementById('box2');
 
-    let isProcessing = false;
+    const guideModal = document.getElementById('guideModal');
+    const helpBtn = document.getElementById('helpBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+
     let url1 = null, url2 = null;
-    let landmarks1 = null, landmarks2 = null;
-    let angleThreshold = 25;
+    let fileObj1 = null, fileObj2 = null;
     let audioOffset = 0;
+    let isLocked = false;
+    let isUserSeeking = false;
 
-    let currentTransform = { x: 0, y: 0, scale: 1, angle: 0 };
-    const SMOOTH_FACTOR_POS = 0.12;
-    const SMOOTH_FACTOR_SCALE = 0.05;
+    const transform1 = { x: 0, y: 0, scale: 1 };
+    const transform2 = { x: 0, y: 0, scale: 1 };
 
-    const pose = new Pose({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}` });
-    pose.setOptions({
-      modelComplexity: 1,
-      smoothLandmarks: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
+    // ナビゲーター表示制御
+    helpBtn.addEventListener('click', () => guideModal.classList.add('show'));
+    closeModalBtn.addEventListener('click', () => guideModal.classList.remove('show'));
+
+    function formatTime(sec) {
+      if (isNaN(sec) || sec < 0) return "00:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function updatePlayButtonUI(isPlaying) {
+      if (isPlaying) {
+        playOverlay.classList.add('playing');
+      } else {
+        playOverlay.classList.remove('playing');
+        playIcon.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+      }
+    }
+
+    function togglePlay() {
+      if (!url1 || !url2) { alert("両方の動画を選択してください"); return; }
+
+      if (video2.paused || video1.paused) {
+        video1.muted = false; video2.muted = false;
+        video1.volume = 1.0; video2.volume = 1.0;
+
+        if (video1.ended) video1.currentTime = 0;
+        if (video2.ended) video2.currentTime = 0;
+
+        alignVideoTime();
+        video1.play(); video2.play();
+        updatePlayButtonUI(true);
+      } else {
+        video1.pause(); video2.pause();
+        updatePlayButtonUI(false);
+      }
+    }
+
+    document.getElementById('videoArea').addEventListener('click', togglePlay);
+
+    function renderFrame() {
+      const w1 = canvas1.width || 300, h1 = canvas1.height || 400;
+      ctx1.clearRect(0, 0, w1, h1);
+      if (video1.readyState >= 2) {
+        ctx1.save();
+        ctx1.translate(w1 / 2 + transform1.x, h1 / 2 + transform1.y);
+        ctx1.scale(transform1.scale, transform1.scale);
+        ctx1.drawImage(video1, -w1 / 2, -h1 / 2, w1, h1);
+        ctx1.restore();
+      }
+
+      const w2 = canvas2.width || 300, h2 = canvas2.height || 400;
+      ctx2.clearRect(0, 0, w2, h2);
+      if (video2.readyState >= 2) {
+        ctx2.save();
+        ctx2.translate(w2 / 2 + transform2.x, h2 / 2 + transform2.y);
+        ctx2.scale(transform2.scale, transform2.scale);
+        ctx2.drawImage(video2, -w2 / 2, -h2 / 2, w2, h2);
+        ctx2.restore();
+      }
+    }
+
+    function loop() {
+      if (!video2.paused && !video2.ended) {
+        let expectedTime = video2.currentTime + audioOffset;
+        if (Math.abs(video1.currentTime - expectedTime) > 0.08 && expectedTime >= 0 && expectedTime <= video1.duration) {
+          video1.currentTime = expectedTime;
+        }
+
+        if (!isUserSeeking && video2.duration) {
+          seekBar.value = (video2.currentTime / video2.duration) * 100;
+          currentTimeText.textContent = formatTime(video2.currentTime);
+        }
+      }
+      renderFrame();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    seekBar.addEventListener('input', () => {
+      isUserSeeking = true;
+      if (video2.duration) {
+        const targetTime = (seekBar.value / 100) * video2.duration;
+        video2.currentTime = targetTime;
+        video1.currentTime = targetTime + audioOffset;
+        currentTimeText.textContent = formatTime(targetTime);
+      }
     });
 
-    function calculateAngle(p1, p2, p3) {
-      if (!p1 || !p2 || !p3) return null;
-      const radians = Math.atan2(p3.y - p2.y, p3.x - p2.x) - Math.atan2(p1.y - p2.y, p1.x - p2.x);
-      let angle = Math.abs((radians * 180.0) / Math.PI);
-      if (angle > 180.0) angle = 360.0 - angle;
-      return angle;
+    seekBar.addEventListener('change', () => {
+      isUserSeeking = false;
+    });
+
+    [video1, video2].forEach(v => {
+      v.addEventListener('ended', () => {
+        video1.pause(); video2.pause();
+        updatePlayButtonUI(false);
+      });
+      v.addEventListener('pause', () => {
+        if (video1.paused && video2.paused) updatePlayButtonUI(false);
+      });
+      v.addEventListener('play', () => {
+        updatePlayButtonUI(true);
+      });
+    });
+
+    function setupTouchControl(boxEl, transformObj) {
+      let isDragging = false;
+      let startX = 0, startY = 0;
+
+      boxEl.addEventListener('pointerdown', (e) => {
+        if (isLocked) return;
+        isDragging = true;
+        startX = e.clientX - transformObj.x;
+        startY = e.clientY - transformObj.y;
+        boxEl.setPointerCapture(e.pointerId);
+      });
+
+      boxEl.addEventListener('pointermove', (e) => {
+        if (!isDragging || isLocked) return;
+        transformObj.x = e.clientX - startX;
+        transformObj.y = e.clientY - startY;
+        renderFrame();
+      });
+
+      const stopDrag = (e) => {
+        isDragging = false;
+        try { boxEl.releasePointerCapture(e.pointerId); } catch(err){}
+      };
+      boxEl.addEventListener('pointerup', stopDrag);
+      boxEl.addEventListener('pointercancel', stopDrag);
     }
 
-    // チェック対象の関節とインデックス
-    const jointConfigs = [
-      { name: "左肘", centerIdx: 13, points: [11, 13, 15], connection: [13, 15] },
-      { name: "右肘", centerIdx: 14, points: [12, 14, 16], connection: [14, 16] },
-      { name: "左肩", centerIdx: 11, points: [13, 11, 23], connection: [11, 13] },
-      { name: "右肩", centerIdx: 12, points: [12, 14, 24], connection: [12, 14] },
-      { name: "左膝", centerIdx: 25, points: [23, 25, 27], connection: [25, 27] },
-      { name: "右膝", centerIdx: 26, points: [24, 26, 28], connection: [26, 28] }
-    ];
+    setupTouchControl(box1, transform1);
+    setupTouchControl(box2, transform2);
 
-    function drawComparison() {
-      const w = canvasElement.width;
-      const h = canvasElement.height;
+    resetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      transform1.x = 0; transform1.y = 0;
+      transform2.x = 0; transform2.y = 0;
+      renderFrame();
+    });
 
-      // 1. 重ね合わせ位置計算
-      if (landmarks1 && landmarks2 &&
-          landmarks1[11] && landmarks1[12] && landmarks1[23] && landmarks1[24] &&
-          landmarks2[11] && landmarks2[12] && landmarks2[23] && landmarks2[24]) {
-
-        const hip1 = { x: (landmarks1[23].x + landmarks1[24].x) / 2, y: (landmarks1[23].y + landmarks1[24].y) / 2 };
-        const hip2 = { x: (landmarks2[23].x + landmarks2[24].x) / 2, y: (landmarks2[23].y + landmarks2[24].y) / 2 };
-
-        const dist1 = Math.hypot(landmarks1[11].x - landmarks1[12].x, landmarks1[11].y - landmarks1[12].y);
-        const dist2 = Math.hypot(landmarks2[11].x - landmarks2[12].x, landmarks2[11].y - landmarks2[12].y);
-
-        const shoulderAngle1 = Math.atan2(landmarks1[12].y - landmarks1[11].y, landmarks1[12].x - landmarks1[11].x);
-        const shoulderAngle2 = Math.atan2(landmarks2[12].y - landmarks2[11].y, landmarks2[12].x - landmarks2[11].x);
-
-        if (dist1 > 0.05 && dist2 > 0.05) {
-          let targetScale = dist2 / dist1;
-          const minAllowedScale = currentTransform.scale * 0.7;
-          const maxAllowedScale = currentTransform.scale * 1.3;
-          targetScale = Math.max(minAllowedScale, Math.min(maxAllowedScale, targetScale));
-
-          const targetX = (hip2.x - hip1.x) * w;
-          const targetY = (hip2.y - hip1.y) * h;
-          
-          let diffAngle = (shoulderAngle2 - shoulderAngle1) * (180 / Math.PI);
-          if (diffAngle > 15) diffAngle = 15;
-          if (diffAngle < -15) diffAngle = -15;
-
-          currentTransform.x += (targetX - currentTransform.x) * SMOOTH_FACTOR_POS;
-          currentTransform.y += (targetY - currentTransform.y) * SMOOTH_FACTOR_POS;
-          currentTransform.scale += (targetScale - currentTransform.scale) * SMOOTH_FACTOR_SCALE;
-          currentTransform.angle += (diffAngle - currentTransform.angle) * SMOOTH_FACTOR_POS;
-        }
+    lockBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isLocked = !isLocked;
+      if (isLocked) {
+        lockText.textContent = "位置固定中";
+        lockIcon.innerHTML = `<path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>`;
+        lockBtn.classList.add('active');
+        box1.classList.add('locked');
+        box2.classList.add('locked');
+      } else {
+        lockText.textContent = "位置調整可";
+        lockIcon.innerHTML = `<path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z"/>`;
+        lockBtn.classList.remove('active');
+        box1.classList.remove('locked');
+        box2.classList.remove('locked');
       }
+    });
 
-      video1.style.transform = `translate(${currentTransform.x}px, ${currentTransform.y}px) rotate(${currentTransform.angle}deg) scale(${currentTransform.scale})`;
+    function setupVideo(videoEl, fileObj, canvasEl, isFirst) {
+      if (!fileObj) return null;
+      if (isFirst && url1) URL.revokeObjectURL(url1);
+      if (!isFirst && url2) URL.revokeObjectURL(url2);
 
-      canvasCtx.save();
-      canvasCtx.clearRect(0, 0, w, h);
+      const objectUrl = URL.createObjectURL(fileObj);
+      videoEl.src = objectUrl;
 
-      // 2. 関節判定 & テキストフィードバックの準備
-      const badJoints = [];
-      const badPointsToHighlight = [];
-      let totalJoints = 0;
-      let matchedJoints = 0;
+      videoEl.onloadeddata = () => {
+        const MAX_DIM = 720;
+        let w = videoEl.videoWidth || 360;
+        let h = videoEl.videoHeight || 640;
+        if (w > MAX_DIM || h > MAX_DIM) {
+          const ratio = Math.min(MAX_DIM / w, Math.round(h * (MAX_DIM / w)));
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        canvasEl.width = w;
+        canvasEl.height = h;
 
-      if (landmarks2 && landmarks1) {
-        jointConfigs.forEach(joint => {
-          const a1 = calculateAngle(landmarks1[joint.points[0]], landmarks1[joint.points[1]], landmarks1[joint.points[2]]);
-          const a2 = calculateAngle(landmarks2[joint.points[0]], landmarks2[joint.points[1]], landmarks2[joint.points[2]]);
+        if (!isFirst && video2.duration) {
+          durationText.textContent = formatTime(video2.duration);
+        }
+        renderFrame();
+      };
+      videoEl.load();
+      return objectUrl;
+    }
 
-          if (a1 !== null && a2 !== null) {
-            totalJoints++;
-            const diff = a2 - a1; // 正なら曲げ過ぎ/開き過ぎ
-            if (Math.abs(diff) > angleThreshold) {
-              const stateText = diff > 0 ? "開きすぎ" : "曲げすぎ";
-              badJoints.push(`⚠️ ${joint.name} (${stateText})`);
-              badPointsToHighlight.push(landmarks2[joint.centerIdx]);
-            } else {
-              matchedJoints++;
+    videoInput1.addEventListener('change', (e) => {
+      if (e.target.files[0]) {
+        fileObj1 = e.target.files[0];
+        fileName1.textContent = fileObj1.name;
+        url1 = setupVideo(video1, fileObj1, canvas1, true);
+        updatePlayButtonUI(false);
+      }
+    });
+
+    videoInput2.addEventListener('change', (e) => {
+      if (e.target.files[0]) {
+        fileObj2 = e.target.files[0];
+        fileName2.textContent = fileObj2.name;
+        url2 = setupVideo(video2, fileObj2, canvas2, false);
+        updatePlayButtonUI(false);
+      }
+    });
+
+    async function syncAudio() {
+      if (!fileObj1 || !fileObj2) { alert("両方の動画を選択してください"); return; }
+      syncStatus.textContent = "解析中...";
+      syncStatus.style.color = "var(--text-sub)";
+
+      setTimeout(async () => {
+        try {
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const fetchAudioFromFile = async (file) => {
+            const buf = await file.arrayBuffer();
+            return await audioCtx.decodeAudioData(buf);
+          };
+
+          const [buf1, buf2] = await Promise.all([fetchAudioFromFile(fileObj1), fetchAudioFromFile(fileObj2)]);
+          const d1 = buf1.getChannelData(0);
+          const d2 = buf2.getChannelData(0);
+          const sampleRate = buf1.sampleRate;
+
+          const targetDuration = Math.min(10, buf1.duration, buf2.duration);
+          const samplesToAnalyze = Math.floor(targetDuration * sampleRate);
+          const step = Math.floor(sampleRate / 2000);
+
+          const s1 = [], s2 = [];
+          let sum1 = 0, sum2 = 0;
+
+          for (let i = 0; i < samplesToAnalyze; i += step) {
+            const v1 = d1[i] || 0;
+            const v2 = d2[i] || 0;
+            s1.push(v1);
+            s2.push(v2);
+            sum1 += v1 * v1;
+            sum2 += v2 * v2;
+          }
+
+          const maxShift = Math.floor(5 * (sampleRate / step));
+          let bestOffset = 0;
+          let maxCorrelation = -Infinity;
+
+          for (let shift = -maxShift; shift <= maxShift; shift++) {
+            let sum = 0;
+            for (let i = 0; i < s2.length; i += 2) {
+              const j = i + shift;
+              if (j >= 0 && j < s1.length) {
+                sum += s2[i] * s1[j];
+              }
+            }
+            if (sum > maxCorrelation) {
+              maxCorrelation = sum;
+              bestOffset = shift;
             }
           }
-        });
 
-        // スコア計算と表示更新
-        if (totalJoints > 0) {
-          const score = Math.round((matchedJoints / totalJoints) * 100);
-          matchScore.textContent = `一致度: ${score}%`;
-          matchScore.style.color = score > 80 ? 'var(--ios-green)' : (score > 50 ? 'var(--ios-yellow)' : 'var(--ios-red)');
-        }
+          const normFactor = Math.sqrt(sum1 * sum2);
+          const similarityRatio = normFactor > 0 ? (maxCorrelation / (normFactor / (s1.length / 100))) : 0;
 
-        // アドバイスUI更新
-        if (badJoints.length > 0) {
-          adviceBox.style.display = 'flex';
-          adviceBox.innerHTML = badJoints.map(j => `<div class="advice-item">${j}</div>`).join('');
-        } else {
-          adviceBox.style.display = 'none';
-        }
-      }
-
-      // 3. 練習動画(video2) の骨格描画
-      if (landmarks2) {
-        POSE_CONNECTIONS.forEach(([i, j]) => {
-          const pA = landmarks2[i];
-          const pB = landmarks2[j];
-          if (pA && pB) {
-            canvasCtx.beginPath();
-            canvasCtx.moveTo(pA.x * w, pA.y * h);
-            canvasCtx.lineTo(pB.x * w, pB.y * h);
-            canvasCtx.strokeStyle = '#30D158';
-            canvasCtx.lineWidth = 3;
-            canvasCtx.stroke();
+          if (similarityRatio < 0.05 || maxCorrelation <= 0) {
+            syncStatus.textContent = "❌ 音声が不一致です";
+            syncStatus.style.color = "var(--accent-red)";
+            audioOffset = 0;
+            return;
           }
-        });
 
-        // ズレている関節に警告リングを描画
-        badPointsToHighlight.forEach(pt => {
-          if (pt) {
-            canvasCtx.beginPath();
-            canvasCtx.arc(pt.x * w, pt.y * h, 14, 0, 2 * Math.PI);
-            canvasCtx.strokeStyle = '#FF453A';
-            canvasCtx.lineWidth = 4;
-            canvasCtx.stroke();
-
-            canvasCtx.beginPath();
-            canvasCtx.arc(pt.x * w, pt.y * h, 6, 0, 2 * Math.PI);
-            canvasCtx.fillStyle = '#FF453A';
-            canvasCtx.fill();
-          }
-        });
-      }
-
-      // 4. 参考動画(video1) の青骨格描画
-      if (landmarks1) {
-        canvasCtx.save();
-        canvasCtx.translate(w / 2 + currentTransform.x, h / 2 + currentTransform.y);
-        canvasCtx.rotate((currentTransform.angle * Math.PI) / 180);
-        canvasCtx.scale(currentTransform.scale, currentTransform.scale);
-        canvasCtx.translate(-w / 2, -h / 2);
-
-        drawConnectors(canvasCtx, landmarks1, POSE_CONNECTIONS, { color: '#0A84FF', lineWidth: 3 });
-        drawLandmarks(canvasCtx, landmarks1, { color: '#0A84FF', lineWidth: 1, radius: 3 });
-        canvasCtx.restore();
-      }
-
-      canvasCtx.restore();
-    }
-
-    async function renderSingleFrame() {
-      if (video2.readyState >= 2) {
-        pose.onResults(res => { landmarks2 = res.poseLandmarks; });
-        await pose.send({ image: video2 });
-      } else { landmarks2 = null; }
-
-      if (video1.readyState >= 2) {
-        pose.onResults(res => { landmarks1 = res.poseLandmarks; });
-        await pose.send({ image: video1 });
-      } else { landmarks1 = null; }
-
-      drawComparison();
-    }
-
-    async function processVideoFrame() {
-      if (video2.paused || video2.ended) {
-        isProcessing = false;
-        return;
-      }
-      isProcessing = true;
-
-      let expectedTime = video2.currentTime + audioOffset;
-      if (Math.abs(video1.currentTime - expectedTime) > 0.1 && expectedTime >= 0) {
-        video1.currentTime = expectedTime;
-      }
-
-      await renderSingleFrame();
-
-      if (!video2.paused && !video2.ended) {
-        requestAnimationFrame(processVideoFrame);
-      } else {
-        isProcessing = false;
-      }
-    }
-
-    // 音声自動同期
-    async function syncAudio() {
-      if (!url1 || !url2) { alert("両方の動画を選択してください。"); return; }
-      syncStatus.textContent = "解析中...";
-      
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const fetchAudio = async (url) => {
-          const res = await fetch(url);
-          const buf = await res.arrayBuffer();
-          return await audioCtx.decodeAudioData(buf);
-        };
-
-        const [buf1, buf2] = await Promise.all([fetchAudio(url1), fetchAudio(url2)]);
-        const data1 = buf1.getChannelData(0);
-        const data2 = buf2.getChannelData(0);
-        const sampleRate = buf1.sampleRate;
-        const searchRange = Math.min(15 * sampleRate, data1.length, data2.length);
-
-        let max1 = 0, idx1 = 0, max2 = 0, idx2 = 0;
-        for (let i = 0; i < searchRange; i++) {
-          if (Math.abs(data1[i]) > max1) { max1 = Math.abs(data1[i]); idx1 = i; }
-          if (Math.abs(data2[i]) > max2) { max2 = Math.abs(data2[i]); idx2 = i; }
+          audioOffset = (bestOffset * step) / sampleRate;
+          syncStatus.textContent = `差: ${audioOffset > 0 ? '+' : ''}${audioOffset.toFixed(2)}s`;
+          syncStatus.style.color = "var(--accent-green)";
+          alignVideoTime();
+        } catch (err) {
+          syncStatus.textContent = "解析エラー";
+          syncStatus.style.color = "var(--accent-red)";
         }
-
-        audioOffset = (idx1 - idx2) / sampleRate;
-        syncStatus.textContent = `完了 (差: ${audioOffset.toFixed(2)}s)`;
-        syncStatus.style.color = "var(--ios-green)";
-        alignVideoTime();
-      } catch (err) {
-        syncStatus.textContent = "解析失敗";
-        syncStatus.style.color = "var(--ios-red)";
-        console.error(err);
-      }
+      }, 50);
     }
 
     function alignVideoTime() {
@@ -540,64 +874,9 @@
       }
     }
 
-    videoInput1.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        if (url1) URL.revokeObjectURL(url1);
-        url1 = URL.createObjectURL(file);
-        video1.src = url1;
-        fileName1.textContent = file.name;
-        syncStatus.textContent = "未同期";
-        syncStatus.style.color = "var(--ios-yellow)";
-        audioOffset = 0;
-      }
-    });
-
-    videoInput2.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        if (url2) URL.revokeObjectURL(url2);
-        url2 = URL.createObjectURL(file);
-        video2.src = url2;
-        fileName2.textContent = file.name;
-        syncStatus.textContent = "未同期";
-        syncStatus.style.color = "var(--ios-yellow)";
-        audioOffset = 0;
-      }
-    });
-
-    video2.addEventListener('loadedmetadata', () => {
-      canvasElement.width = video2.videoWidth;
-      canvasElement.height = video2.videoHeight;
-      if (video2.videoWidth && video2.videoHeight) {
-        container.style.aspectRatio = `${video2.videoWidth} / ${video2.videoHeight}`;
-      }
-    });
-
-    video2.addEventListener('play', () => {
-      alignVideoTime();
-      video1.play().catch(() => {});
-      if (!isProcessing) processVideoFrame();
-    });
-
-    video2.addEventListener('pause', () => { video1.pause(); });
-    video2.addEventListener('seeking', () => { alignVideoTime(); });
-    video2.addEventListener('seeked', () => {
-      alignVideoTime();
-      if (video2.paused) renderSingleFrame();
-    });
-
-    syncAudioBtn.addEventListener('click', syncAudio);
-
-    thresholdRange.addEventListener('input', (e) => {
-      angleThreshold = parseFloat(e.target.value);
-      thresholdVal.textContent = `${angleThreshold}°`;
-      if (video2.paused) drawComparison();
-    });
-
-    opacityRange.addEventListener('input', (e) => {
-      video1.style.opacity = e.target.value;
-      opacityVal.textContent = `${Math.round(e.target.value * 100)}%`;
+    syncAudioBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      syncAudio();
     });
   </script>
 </body>
