@@ -4,24 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
-  <!-- iOS Safari フルスクリーン（PWA）専用設定 -->
+  <!-- iOS Safari フルスクリーン（PWA）設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DANCE TRACE">
   <meta name="mobile-web-app-capable" content="yes">
 
-  <!-- ホーム画面追加用アイコン (Data URI SVG) -->
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230d0e12'/%3E%3Cg transform='translate(256, 256)'%3E%3Ccircle r='210' fill='none' stroke='%2300f2fe' stroke-width='8' opacity='0.25'/%3E%3Cpath d='M-140,-100 L0,-100 L60,0 L0,100 L-140,100' fill='none' stroke='%2300f2fe' stroke-width='32' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-20,-100 L120,-100 L180,0 L120,100 L-20,100' fill='none' stroke='%2300ff87' stroke-width='32' stroke-linecap='round' stroke-linejoin='round' opacity='0.9'/%3E%3Cline x1='-180' y1='0' x2='180' y2='0' stroke='%23ffea00' stroke-width='12' stroke-dasharray='16,12' opacity='0.8'/%3E%3C/g%3E%3C/svg%3E">
+  <!-- ホーム画面追加用アイコン -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230b0d14'/%3E%3Cstop offset='100%25' stop-color='%231a1d28'/%3E%3C/linearGradient%3E%3ClinearGradient id='g1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300f2fe'/%3E%3Cstop offset='100%25' stop-color='%234facfe'/%3E%3C/linearGradient%3E%3ClinearGradient id='g2' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300ff87'/%3E%3Cstop offset='100%25' stop-color='%2360efff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='120' fill='url(%23bg)'/%3E%3Crect x='8' y='8' width='496' height='496' rx='112' fill='none' stroke='rgba(255,255,255,0.08)' stroke-width='4'/%3E%3Cg transform='translate(256, 256)'%3E%3Ccircle r='180' fill='none' stroke='url(%23g1)' stroke-width='3' opacity='0.3' stroke-dasharray='12 8'/%3E%3Cpath d='M-60,-120 C-20,-140 40,-100 20,-40 C0,20 80,60 100,120' fill='none' stroke='url(%23g1)' stroke-width='28' stroke-linecap='round'/%3E%3Cpath d='M-100,-80 C-40,-100 20,-60 0,0 C-20,60 40,100 60,140' fill='none' stroke='url(%23g2)' stroke-width='16' stroke-linecap='round' opacity='0.85'/%3E%3Ccircle cx='20' cy='-110' r='18' fill='%2300f2fe'/%3E%3Ccircle cx='0' cy='-70' r='12' fill='%2300ff87'/%3E%3C/g%3E%3C/svg%3E">
 
-  <title>DANCE TRACE - Dance Comparison Player v1.0.1</title>
+  <title>DANCE TRACE v1.0.6</title>
   <style>
     :root {
       --bg-color: #0d0e12;
       --card-bg: rgba(22, 24, 31, 0.88);
       --card-border: rgba(255, 255, 255, 0.12);
-      --accent-neon: #00f2fe;     /* サイバーブルー */
-      --accent-dancer: #4facfe;   /* 鮮やかな青 */
-      --accent-green: #00ff87;    /* ネオングリーン */
+      --accent-neon: #00f2fe;
+      --accent-dancer: #4facfe;
+      --accent-green: #00ff87;
       --accent-yellow: #ffea00;
       --accent-red: #ff0055;
       --text-main: #ffffff;
@@ -77,7 +77,6 @@
       -webkit-text-fill-color: transparent;
     }
 
-    /* バージョン表示用タグ */
     .version-tag {
       font-size: 9px;
       font-weight: 700;
@@ -115,8 +114,7 @@
       height: calc(100dvh - 38px);
     }
 
-    /* 縦持ち（Portrait）時のUI最適化 */
-    @media screen and (orientation: portrait) {
+    @media screen and (max-width: 768px) and (orientation: portrait) {
       .app-body {
         flex-direction: column;
         justify-content: center;
@@ -133,18 +131,10 @@
         grid-template-columns: 1fr 1fr;
         gap: 8px;
       }
-      .file-card {
-        grid-column: span 1;
-      }
-      .btn-sync {
-        grid-column: span 2;
-      }
-      .btn-lock, .btn-reset {
-        grid-column: span 1;
-      }
-      .sync-info {
-        grid-column: span 2;
-      }
+      .file-card { grid-column: span 1; }
+      .btn-sync { grid-column: span 2; }
+      .btn-lock, .btn-reset { grid-column: span 1; }
+      .sync-info { grid-column: span 2; }
     }
 
     .player-main {
@@ -169,7 +159,7 @@
       height: 100%;
       background: #000000;
       border-radius: 12px;
-      overflow: hidden;
+      overflow: hidden; /* 枠外への溢れを制御 */
       border: 0.5px solid var(--card-border);
       touch-action: none;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
@@ -178,12 +168,14 @@
     .view-box:active { cursor: grabbing; }
     .view-box.locked { cursor: default; }
 
-    .view-box video { display: none; }
-
-    .view-box canvas {
+    /* トリミング（切り欠き）を解除し、元の全体アスペクト比を維持して拡大縮小・移動可能に */
+    .view-box video {
       position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      object-fit: cover;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain; /* object-fit: cover から contain に変更 */
+      transform-origin: center center;
+      will-change: transform;
       pointer-events: none;
     }
 
@@ -218,23 +210,26 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 10;
+      z-index: 20;
       transition: all 0.25s ease;
-      pointer-events: none;
+      cursor: pointer;
+      pointer-events: auto;
       box-shadow: 0 0 20px rgba(0, 242, 254, 0.2);
     }
 
     .play-overlay svg {
       width: 24px; height: 24px;
       fill: #ffffff;
+      pointer-events: none;
     }
 
     .play-overlay.playing {
       opacity: 0;
+      pointer-events: none;
       transform: translate(-50%, -50%) scale(0.8);
     }
 
-    /* ダンサー用グリッド（体幹軸・高さガイド） */
+    /* ダンサー用グリッド */
     .grid-overlay {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -247,7 +242,6 @@
       background-position: center center;
     }
 
-    /* 垂直・水平の基準センターライン */
     .grid-center-line-v {
       position: absolute;
       left: 50%; top: 0; height: 100%; width: 1px;
@@ -303,6 +297,7 @@
       background: rgba(255, 255, 255, 0.2);
       border-radius: 2px;
       outline: none;
+      cursor: pointer;
     }
 
     .seekBar::-webkit-slider-thumb {
@@ -507,7 +502,7 @@
   <div class="header">
     <div class="header-title-container">
       <div class="header-title">DANCE TRACE</div>
-      <span class="version-tag">v1.0.1</span>
+      <span class="version-tag">v1.0.6</span>
     </div>
     <button class="btn-help" id="helpBtn" title="ヘルプ">
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
@@ -517,14 +512,14 @@
   <div class="app-body">
     <div class="player-main">
       <div class="split-container" id="videoArea">
+        
         <div class="view-box" id="box1">
           <div class="view-badge" style="color: var(--accent-neon);">REF (お手本)</div>
           <div class="lock-indicator">固定中</div>
           <div class="grid-overlay"></div>
           <div class="grid-center-line-v"></div>
           <div class="grid-center-line-h"></div>
-          <video id="video1" playsinline webkit-playsinline preload="metadata" crossorigin="anonymous"></video>
-          <canvas id="canvas1"></canvas>
+          <video id="video1" playsinline webkit-playsinline></video>
         </div>
 
         <div class="view-box" id="box2">
@@ -533,8 +528,7 @@
           <div class="grid-overlay"></div>
           <div class="grid-center-line-v"></div>
           <div class="grid-center-line-h"></div>
-          <video id="video2" playsinline webkit-playsinline preload="metadata" crossorigin="anonymous"></video>
-          <canvas id="canvas2"></canvas>
+          <video id="video2" playsinline webkit-playsinline></video>
         </div>
 
         <div class="play-overlay" id="playOverlay">
@@ -554,16 +548,16 @@
         <div class="file-header" style="color: var(--accent-neon);">
           📁 動画1 (REF)
         </div>
-        <div class="file-name" id="fileName1">タップして選択</div>
-        <input type="file" id="videoInput1" accept="video/*" playsinline>
+        <div class="file-name" id="fileName1">選択してください</div>
+        <input type="file" id="videoInput1" accept="video/*">
       </div>
 
       <div class="file-card">
         <div class="file-header" style="color: var(--accent-green);">
           📁 動画2 (USER)
         </div>
-        <div class="file-name" id="fileName2">タップして選択</div>
-        <input type="file" id="videoInput2" accept="video/*" playsinline>
+        <div class="file-name" id="fileName2">選択してください</div>
+        <input type="file" id="videoInput2" accept="video/*">
       </div>
 
       <button class="btn btn-sync" id="syncAudioBtn">
@@ -582,7 +576,7 @@
     </div>
   </div>
 
-  <!-- ヘルプ・プライバシーモーダル -->
+  <!-- ヘルプモーダル -->
   <div class="modal-overlay" id="guideModal">
     <div class="modal-card">
       <div class="modal-title">DANCE TRACE の使い方</div>
@@ -597,17 +591,17 @@
         </div>
         <div class="step-item">
           <div class="step-num">3</div>
-          <div>画面の<b>1本指ドラッグで移動</b>、<b>2本指ピンチで拡大縮小</b>して人物の大きさや位置を正確に合わせられます。ダブルタップでリセットできます。</div>
+          <div><b>位置移動:</b> ドラッグで移動、ピンチイン/ホイールで拡大縮小、ダブルタップでリセット。</div>
         </div>
         <div class="step-item">
           <div class="step-num">4</div>
-          <div><b>📱 URLバーを消す方法:</b> Safariの共有ボタン（四角と矢印）から<b>「ホーム画面に追加」</b>して起動すると、URLバーが消えてフルスクリーン表示になります。</div>
+          <div><b>📱 iPhoneフルスクリーン:</b> Safariの共有ボタンから<b>「ホーム画面に追加」</b>すると全画面で起動します。</div>
         </div>
       </div>
 
       <div class="privacy-box">
-        🔒 <b>セキュリティ＆プライバシー完全保護</b><br>
-        選択した動画や音声データはiPhone内部でのみ処理されます。外部のサーバーへ送信・保存されることは一切ありません。
+        🔒 <b>セキュリティ完全保護</b><br>
+        動画や音声データはデバイス内部でのみ処理されます。外部サーバーへの送信は一切ありません。
       </div>
 
       <button class="modal-close-btn" id="closeModalBtn">閉じる</button>
@@ -617,10 +611,6 @@
   <script>
     const video1 = document.getElementById('video1');
     const video2 = document.getElementById('video2');
-    const canvas1 = document.getElementById('canvas1');
-    const canvas2 = document.getElementById('canvas2');
-    const ctx1 = canvas1.getContext('2d');
-    const ctx2 = canvas2.getContext('2d');
 
     const videoInput1 = document.getElementById('videoInput1');
     const videoInput2 = document.getElementById('videoInput2');
@@ -648,7 +638,6 @@
     let audioOffset = 0;
     let isLocked = false;
     let isUserSeeking = false;
-    let animFrameId = null;
 
     const transform1 = { x: 0, y: 0, scale: 1 };
     const transform2 = { x: 0, y: 0, scale: 1 };
@@ -672,104 +661,79 @@
       }
     }
 
-    function togglePlay() {
-      if (!url1 || !url2) { alert("両方の動画を選択してください"); return; }
+    function applyTransform(videoEl, transform) {
+      videoEl.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
+    }
 
-      if (video2.paused || video1.paused) {
-        video1.muted = false; video2.muted = false;
-        video1.volume = 1.0; video2.volume = 1.0;
+    async function togglePlay() {
+      if (!url1 && !url2) { alert("動画を選択してください"); return; }
 
-        if (video1.ended) video1.currentTime = 0;
-        if (video2.ended) video2.currentTime = 0;
+      const isPaused = (video1.src && video1.paused) || (video2.src && video2.paused);
 
+      if (isPaused) {
         alignVideoTime();
-        video1.play(); video2.play();
-        updatePlayButtonUI(true);
-        startLoop();
+        try {
+          const promises = [];
+          if (video1.src) promises.push(video1.play());
+          if (video2.src) promises.push(video2.play());
+          await Promise.all(promises);
+          updatePlayButtonUI(true);
+        } catch (err) {
+          console.error("再生エラー:", err);
+        }
       } else {
-        video1.pause(); video2.pause();
+        if (video1.src) video1.pause();
+        if (video2.src) video2.pause();
         updatePlayButtonUI(false);
-        stopLoop();
       }
     }
 
-    // 単発枠描画
-    function renderFrame() {
-      const w1 = canvas1.width || 300, h1 = canvas1.height || 400;
-      ctx1.clearRect(0, 0, w1, h1);
-      if (video1.readyState >= 2) {
-        ctx1.save();
-        ctx1.translate(w1 / 2 + transform1.x, h1 / 2 + transform1.y);
-        ctx1.scale(transform1.scale, transform1.scale);
-        ctx1.drawImage(video1, -w1 / 2, -h1 / 2, w1, h1);
-        ctx1.restore();
+    playOverlay.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePlay();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.code === 'KeyR') {
+        resetBtn.click();
+      } else if (e.code === 'KeyL') {
+        lockBtn.click();
       }
+    });
 
-      const w2 = canvas2.width || 300, h2 = canvas2.height || 400;
-      ctx2.clearRect(0, 0, w2, h2);
-      if (video2.readyState >= 2) {
-        ctx2.save();
-        ctx2.translate(w2 / 2 + transform2.x, h2 / 2 + transform2.y);
-        ctx2.scale(transform2.scale, transform2.scale);
-        ctx2.drawImage(video2, -w2 / 2, -h2 / 2, w2, h2);
-        ctx2.restore();
-      }
-    }
-
-    function loop() {
-      if (!video2.paused && !video2.ended) {
-        let expectedTime = video2.currentTime + audioOffset;
-        if (Math.abs(video1.currentTime - expectedTime) > 0.08 && expectedTime >= 0 && expectedTime <= video1.duration) {
-          video1.currentTime = expectedTime;
-        }
-
-        if (!isUserSeeking && video2.duration) {
-          seekBar.value = (video2.currentTime / video2.duration) * 100;
-          currentTimeText.textContent = formatTime(video2.currentTime);
-        }
-        renderFrame();
-        animFrameId = requestAnimationFrame(loop);
-      } else {
-        stopLoop();
-      }
-    }
-
-    function startLoop() {
-      stopLoop();
-      animFrameId = requestAnimationFrame(loop);
-    }
-
-    function stopLoop() {
-      if (animFrameId) {
-        cancelAnimationFrame(animFrameId);
-        animFrameId = null;
+    function updateTimeline() {
+      const mainVideo = video2.src ? video2 : video1;
+      if (mainVideo && mainVideo.duration && !isUserSeeking) {
+        seekBar.value = (mainVideo.currentTime / mainVideo.duration) * 100;
+        currentTimeText.textContent = formatTime(mainVideo.currentTime);
       }
     }
 
     seekBar.addEventListener('input', () => {
       isUserSeeking = true;
-      if (video2.duration) {
-        const targetTime = (seekBar.value / 100) * video2.duration;
-        video2.currentTime = targetTime;
-        video1.currentTime = targetTime + audioOffset;
+      const mainVideo = video2.src ? video2 : video1;
+      if (mainVideo && mainVideo.duration) {
+        const targetTime = (seekBar.value / 100) * mainVideo.duration;
+        if (video2.src) video2.currentTime = targetTime;
+        if (video1.src) video1.currentTime = Math.max(0, targetTime + audioOffset);
         currentTimeText.textContent = formatTime(targetTime);
-        renderFrame();
       }
     });
 
     seekBar.addEventListener('change', () => { isUserSeeking = false; });
 
     [video1, video2].forEach(v => {
-      v.addEventListener('ended', () => { video1.pause(); video2.pause(); updatePlayButtonUI(false); stopLoop(); });
-      v.addEventListener('pause', () => { if (video1.paused && video2.paused) { updatePlayButtonUI(false); stopLoop(); } });
-      v.addEventListener('play', () => { updatePlayButtonUI(true); startLoop(); });
-      v.addEventListener('seeked', renderFrame);
+      v.addEventListener('timeupdate', updateTimeline);
+      v.addEventListener('ended', () => { video1.pause(); video2.pause(); updatePlayButtonUI(false); });
+      v.addEventListener('pause', () => { if ((!video1.src || video1.paused) && (!video2.src || video2.paused)) updatePlayButtonUI(false); });
+      v.addEventListener('play', () => updatePlayButtonUI(true));
     });
 
-    // -------------------------------------------------------------
-    // タッチ・ピンチイン/アウト・マルチタッチ完全対応ジェスチャーエンジン
-    // -------------------------------------------------------------
-    function setupTouchControl(boxEl, transformObj) {
+    // タッチ・マウス制御
+    function setupTouchControl(boxEl, videoEl, transformObj) {
       let activePointers = new Map();
       let initialDistance = 0;
       let startScale = 1;
@@ -778,10 +742,16 @@
       let lastTapTime = 0;
 
       function getDistance(p1, p2) {
-        const dx = p1.clientX - p2.clientX;
-        const dy = p1.clientY - p2.clientY;
-        return Math.hypot(dx, dy);
+        return Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
       }
+
+      boxEl.addEventListener('wheel', (e) => {
+        if (isLocked) return;
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        transformObj.scale = Math.min(Math.max(transformObj.scale + delta, 0.2), 5.0);
+        applyTransform(videoEl, transformObj);
+      }, { passive: false });
 
       boxEl.addEventListener('pointerdown', (e) => {
         if (isLocked) return;
@@ -804,7 +774,6 @@
         activePointers.set(e.pointerId, { clientX: e.clientX, clientY: e.clientY });
 
         if (activePointers.size === 1) {
-          // 1本指ドラッグ移動
           const currentX = e.clientX - startX;
           const currentY = e.clientY - startY;
           if (Math.abs(currentX - transformObj.x) > 3 || Math.abs(currentY - transformObj.y) > 3) {
@@ -812,17 +781,15 @@
           }
           transformObj.x = currentX;
           transformObj.y = currentY;
-          renderFrame();
+          applyTransform(videoEl, transformObj);
         } else if (activePointers.size === 2) {
-          // 2本指ピンチイン/ピンチアウト拡大縮小
           isMoved = true;
           const pts = Array.from(activePointers.values());
           const dist = getDistance(pts[0], pts[1]);
           if (initialDistance > 0) {
             const factor = dist / initialDistance;
-            // 拡大率制限: 0.5倍 〜 4.0倍
-            transformObj.scale = Math.min(Math.max(startScale * factor, 0.5), 4.0);
-            renderFrame();
+            transformObj.scale = Math.min(Math.max(startScale * factor, 0.2), 5.0);
+            applyTransform(videoEl, transformObj);
           }
         }
       });
@@ -833,21 +800,16 @@
           try { boxEl.releasePointerCapture(e.pointerId); } catch(err){}
         }
 
-        if (activePointers.size < 2) {
-          initialDistance = 0;
-        }
+        if (activePointers.size < 2) initialDistance = 0;
 
-        // タップ動作判定（ドラッグ操作がなく短時間タップの場合）
         if (!isMoved && activePointers.size === 0) {
           const now = Date.now();
           if (now - lastTapTime < 300) {
-            // ダブルタップでその画面の位置・拡大率を初期化
             transformObj.x = 0;
             transformObj.y = 0;
             transformObj.scale = 1;
-            renderFrame();
+            applyTransform(videoEl, transformObj);
           } else {
-            // シングルタップで再生 / 停止
             togglePlay();
           }
           lastTapTime = now;
@@ -858,14 +820,15 @@
       boxEl.addEventListener('pointercancel', handlePointerUp);
     }
 
-    setupTouchControl(box1, transform1);
-    setupTouchControl(box2, transform2);
+    setupTouchControl(box1, video1, transform1);
+    setupTouchControl(box2, video2, transform2);
 
     resetBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       transform1.x = 0; transform1.y = 0; transform1.scale = 1;
       transform2.x = 0; transform2.y = 0; transform2.scale = 1;
-      renderFrame();
+      applyTransform(video1, transform1);
+      applyTransform(video2, transform2);
     });
 
     lockBtn.addEventListener('click', (e) => {
@@ -884,38 +847,25 @@
       }
     });
 
-    // iPhone用最適化：画面解像度のリサイズ制御＆旧データ完全解放
-    function setupVideo(videoEl, fileObj, canvasEl, isFirst) {
+    function setupVideo(videoEl, fileObj, isFirst) {
       if (!fileObj) return null;
-      
+
       if (isFirst) {
-        if (url1) { URL.revokeObjectURL(url1); video1.removeAttribute('src'); video1.load(); }
+        if (url1) URL.revokeObjectURL(url1);
       } else {
-        if (url2) { URL.revokeObjectURL(url2); video2.removeAttribute('src'); video2.load(); }
+        if (url2) URL.revokeObjectURL(url2);
       }
 
       const objectUrl = URL.createObjectURL(fileObj);
       videoEl.src = objectUrl;
 
       videoEl.onloadedmetadata = () => {
-        // 解像度を最大540pxに抑えてメモリを大幅削減（iPhoneのクラッシュ防止）
-        const MAX_DIM = 540;
-        let w = videoEl.videoWidth || 360;
-        let h = videoEl.videoHeight || 640;
-        if (w > MAX_DIM || h > MAX_DIM) {
-          const ratio = Math.min(MAX_DIM / w, MAX_DIM / h);
-          w = Math.round(w * ratio);
-          h = Math.round(h * ratio);
+        const mainVideo = video2.duration ? video2 : video1;
+        if (mainVideo.duration) {
+          durationText.textContent = formatTime(mainVideo.duration);
         }
-        canvasEl.width = w;
-        canvasEl.height = h;
-
-        if (!isFirst && video2.duration) {
-          durationText.textContent = formatTime(video2.duration);
-        }
-        renderFrame();
       };
-      videoEl.load();
+
       return objectUrl;
     }
 
@@ -923,7 +873,7 @@
       if (e.target.files[0]) {
         fileObj1 = e.target.files[0];
         fileName1.textContent = fileObj1.name;
-        url1 = setupVideo(video1, fileObj1, canvas1, true);
+        url1 = setupVideo(video1, fileObj1, true);
         updatePlayButtonUI(false);
       }
     });
@@ -932,16 +882,16 @@
       if (e.target.files[0]) {
         fileObj2 = e.target.files[0];
         fileName2.textContent = fileObj2.name;
-        url2 = setupVideo(video2, fileObj2, canvas2, false);
+        url2 = setupVideo(video2, fileObj2, false);
         updatePlayButtonUI(false);
       }
     });
 
-    // 音声自動同期（サンプリングの間引き・高効率処理）
+    // 長尺動画（3分以上）にも対応した高速音声自動同期エンジン
     async function syncAudio() {
       if (!fileObj1 || !fileObj2) { alert("両方の動画を選択してください"); return; }
-      syncStatus.textContent = "解析中...";
-      syncStatus.style.color = "var(--text-sub)";
+      syncStatus.textContent = "音声解析中...";
+      syncStatus.style.color = "var(--accent-neon)";
 
       setTimeout(async () => {
         try {
@@ -956,10 +906,10 @@
           const d2 = buf2.getChannelData(0);
           const sampleRate = buf1.sampleRate;
 
-          // メモリ保護のため最初の8秒間だけ解析
-          const targetDuration = Math.min(8, buf1.duration, buf2.duration);
+          // 冒頭〜最大15秒間の区間を解析対象にして高速処理を実現
+          const targetDuration = Math.min(15, buf1.duration, buf2.duration);
           const samplesToAnalyze = Math.floor(targetDuration * sampleRate);
-          const step = Math.floor(sampleRate / 1000); // 間引き率を上げて超軽量化
+          const step = Math.floor(sampleRate / 400);
 
           const s1 = [], s2 = [];
           let sum1 = 0, sum2 = 0;
@@ -973,9 +923,9 @@
             sum2 += v2 * v2;
           }
 
-          audioCtx.close(); // 音声コンテキストの完全破棄（メモリ解放）
+          audioCtx.close();
 
-          const maxShift = Math.floor(5 * (sampleRate / step));
+          const maxShift = Math.floor(6 * (sampleRate / step)); // 最大±6秒のズレまで対応
           let bestOffset = 0;
           let maxCorrelation = -Infinity;
 
@@ -996,7 +946,7 @@
           const normFactor = Math.sqrt(sum1 * sum2);
           const similarityRatio = normFactor > 0 ? (maxCorrelation / (normFactor / (s1.length / 100))) : 0;
 
-          if (similarityRatio < 0.05 || maxCorrelation <= 0) {
+          if (similarityRatio < 0.02 || maxCorrelation <= 0) {
             syncStatus.textContent = "❌ 音声不一致";
             syncStatus.style.color = "var(--accent-red)";
             audioOffset = 0;
@@ -1015,9 +965,11 @@
     }
 
     function alignVideoTime() {
-      let targetTime = video2.currentTime + audioOffset;
-      if (targetTime >= 0 && targetTime <= video1.duration) {
-        video1.currentTime = targetTime;
+      if (video1.src && video2.src) {
+        let targetTime = video2.currentTime + audioOffset;
+        if (targetTime >= 0 && targetTime <= video1.duration) {
+          video1.currentTime = targetTime;
+        }
       }
     }
 
