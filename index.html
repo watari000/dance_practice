@@ -4,12 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
-  <!-- iOS Safari用 フルスクリーン（PWA）設定 -->
+  <!-- iOS Safari フルスクリーン（PWA）専用設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="DANCE ALIGN">
+  <meta name="apple-mobile-web-app-title" content="DANCE TRACE">
+  <meta name="mobile-web-app-capable" content="yes">
 
-  <title>DANCE ALIGN - Dance Comparison Player</title>
+  <!-- ホーム画面追加用アイコン (Data URI SVG) -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230d0e12'/%3E%3Cg transform='translate(256, 256)'%3E%3Ccircle r='210' fill='none' stroke='%2300f2fe' stroke-width='8' opacity='0.25'/%3E%3Cpath d='M-140,-100 L0,-100 L60,0 L0,100 L-140,100' fill='none' stroke='%2300f2fe' stroke-width='32' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-20,-100 L120,-100 L180,0 L120,100 L-20,100' fill='none' stroke='%2300ff87' stroke-width='32' stroke-linecap='round' stroke-linejoin='round' opacity='0.9'/%3E%3Cline x1='-180' y1='0' x2='180' y2='0' stroke='%23ffea00' stroke-width='12' stroke-dasharray='16,12' opacity='0.8'/%3E%3C/g%3E%3C/svg%3E">
+
+  <title>DANCE TRACE - Dance Comparison Player</title>
   <style>
     :root {
       --bg-color: #0d0e12;
@@ -30,54 +34,24 @@
       user-select: none;
     }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100dvh;
       background-color: var(--bg-color);
       color: var(--text-main);
-      margin: 0;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-      height: 100vh;
-      width: 100vw;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-    }
-
-    /* 縦画面用アラートカバー */
-    .portrait-warning {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(13, 14, 18, 0.95);
-      backdrop-filter: blur(20px);
-      z-index: 999;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      text-align: center;
-      padding: 20px;
-    }
-    
-    .portrait-warning svg {
-      width: 64px; height: 64px;
-      fill: var(--accent-neon);
-      animation: rotateHint 2s infinite ease-in-out;
-    }
-
-    @keyframes rotateHint {
-      0%, 100% { transform: rotate(0deg); }
-      50% { transform: rotate(-90deg); }
-    }
-
-    @media screen and (orientation: portrait) {
-      .portrait-warning { display: flex; }
     }
 
     /* ヘッダー */
     .header {
       height: 38px;
       padding: 0 16px;
+      padding-top: env(safe-area-inset-top);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -85,6 +59,7 @@
       backdrop-filter: blur(20px);
       border-bottom: 0.5px solid var(--card-border);
       z-index: 10;
+      flex-shrink: 0;
     }
 
     .header-title {
@@ -113,13 +88,48 @@
     }
     .btn-help svg { width: 15px; height: 15px; fill: currentColor; }
 
-    /* メインボディ */
+    /* メインボディ：横画面デフォルト制御 */
     .app-body {
       flex: 1;
       display: flex;
       gap: 10px;
       padding: 8px 10px;
-      height: calc(100vh - 38px);
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+      padding-left: max(10px, env(safe-area-inset-left));
+      padding-right: max(10px, env(safe-area-inset-right));
+      height: calc(100dvh - 38px);
+    }
+
+    /* 縦持ち（Portrait）時のUI最適化：横長画面であることを強調 */
+    @media screen and (orientation: portrait) {
+      .app-body {
+        flex-direction: column;
+        justify-content: center;
+        gap: 12px;
+      }
+      .player-main {
+        height: auto !important;
+        aspect-ratio: 16 / 9; /* 強制的に横長シアター比率にする */
+      }
+      .sidebar-controls {
+        width: 100% !important;
+        height: auto !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .file-card {
+        grid-column: span 1;
+      }
+      .btn-sync {
+        grid-column: span 2;
+      }
+      .btn-lock, .btn-reset {
+        grid-column: span 1;
+      }
+      .sync-info {
+        grid-column: span 2;
+      }
     }
 
     .player-main {
@@ -209,7 +219,7 @@
       transform: translate(-50%, -50%) scale(0.8);
     }
 
-    /* ダンサー用グリッド（体幹軸ガイド） */
+    /* ダンサー用グリッド（体幹軸・高さガイド） */
     .grid-overlay {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -222,10 +232,18 @@
       background-position: center center;
     }
 
+    /* 垂直・水平の基準センターライン */
     .grid-center-line-v {
       position: absolute;
       left: 50%; top: 0; height: 100%; width: 1px;
       border-left: 1px dashed rgba(0, 242, 254, 0.6);
+      z-index: 5; pointer-events: none;
+    }
+
+    .grid-center-line-h {
+      position: absolute;
+      top: 50%; left: 0; width: 100%; height: 1px;
+      border-top: 1px dashed rgba(0, 242, 254, 0.6);
       z-index: 5; pointer-events: none;
     }
 
@@ -386,7 +404,7 @@
     /* モーダル */
     .modal-overlay {
       position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
+      top: 0; left: 0; width: 100vw; height: 100dvh;
       background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(15px);
       z-index: 100;
@@ -403,7 +421,7 @@
     }
 
     .modal-card {
-      width: 340px;
+      width: 360px;
       max-width: 90vw;
       background: rgba(22, 24, 31, 0.95);
       border: 0.5px solid var(--card-border);
@@ -477,15 +495,8 @@
 </head>
 <body>
 
-  <!-- 縦向き時に表示する指示 -->
-  <div class="portrait-warning">
-    <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5c-.47-4.82-3.48-8.88-7.66-10.74l.19 2.26zm1.02 18.96c-3.27-1.55-5.61-4.72-5.97-8.48h-1.5c.47 4.82 3.48 8.88 7.66 10.74l-.19-2.26zM17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
-    <div style="font-weight: 800; font-size: 16px;">画面を横向きにしてください</div>
-    <div style="font-size: 12px; color: var(--text-sub);">iPhoneの「画面縦ロック」を解除して<br>端末を横にしてご使用ください</div>
-  </div>
-
   <div class="header">
-    <div class="header-title">DANCE ALIGN</div>
+    <div class="header-title">DANCE TRACE</div>
     <button class="btn-help" id="helpBtn" title="ヘルプ">
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
     </button>
@@ -499,6 +510,7 @@
           <div class="lock-indicator">固定中</div>
           <div class="grid-overlay"></div>
           <div class="grid-center-line-v"></div>
+          <div class="grid-center-line-h"></div>
           <video id="video1" playsinline webkit-playsinline preload="auto" crossorigin="anonymous"></video>
           <canvas id="canvas1"></canvas>
         </div>
@@ -508,6 +520,7 @@
           <div class="lock-indicator">固定中</div>
           <div class="grid-overlay"></div>
           <div class="grid-center-line-v"></div>
+          <div class="grid-center-line-h"></div>
           <video id="video2" playsinline webkit-playsinline preload="auto" crossorigin="anonymous"></video>
           <canvas id="canvas2"></canvas>
         </div>
@@ -544,7 +557,6 @@
       <button class="btn btn-sync" id="syncAudioBtn">
         ⚡ 音声自動同期
       </button>
-      <div class="sync-info" id="syncStatus"></div>
 
       <button class="btn btn-lock" id="lockBtn">
         <span id="lockText">位置調整可</span>
@@ -553,13 +565,15 @@
       <button class="btn btn-reset" id="resetBtn">
         位置リセット
       </button>
+
+      <div class="sync-info" id="syncStatus"></div>
     </div>
   </div>
 
   <!-- ヘルプ・プライバシーモーダル -->
   <div class="modal-overlay" id="guideModal">
     <div class="modal-card">
-      <div class="modal-title">DANCE ALIGN の使い方</div>
+      <div class="modal-title">DANCE TRACE の使い方</div>
       <div class="step-list">
         <div class="step-item">
           <div class="step-num">1</div>
@@ -571,7 +585,11 @@
         </div>
         <div class="step-item">
           <div class="step-num">3</div>
-          <div>画面ドラッグで人物の位置を重ね合わせたり、中央点線（軸）に合わせて動きをチェックできます。</div>
+          <div>画面ドラッグで人物の位置を重ね合わせたり、中央十字ガイドに合わせて動きをチェックできます。</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div><b>📱 URLバーを消す方法:</b> Safariの共有ボタン（四角と矢印）から<b>「ホーム画面に追加」</b>して起動すると、URLバーが消えてフルスクリーン表示になります。</div>
         </div>
       </div>
 
@@ -775,7 +793,6 @@
     function setupVideo(videoEl, fileObj, canvasEl, isFirst) {
       if (!fileObj) return null;
       
-      // メモリ解放処理
       if (isFirst && url1) URL.revokeObjectURL(url1);
       if (!isFirst && url2) URL.revokeObjectURL(url2);
 
