@@ -13,7 +13,7 @@
   <!-- ホーム画面追加用アイコン (Data URI SVG) -->
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230d0e12'/%3E%3Cg transform='translate(256, 256)'%3E%3Ccircle r='210' fill='none' stroke='%2300f2fe' stroke-width='8' opacity='0.25'/%3E%3Cpath d='M-140,-100 L0,-100 L60,0 L0,100 L-140,100' fill='none' stroke='%2300f2fe' stroke-width='32' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-20,-100 L120,-100 L180,0 L120,100 L-20,100' fill='none' stroke='%2300ff87' stroke-width='32' stroke-linecap='round' stroke-linejoin='round' opacity='0.9'/%3E%3Cline x1='-180' y1='0' x2='180' y2='0' stroke='%23ffea00' stroke-width='12' stroke-dasharray='16,12' opacity='0.8'/%3E%3C/g%3E%3C/svg%3E">
 
-  <title>DANCE TRACE - Dance Comparison Player</title>
+  <title>DANCE TRACE - Dance Comparison Player v1.0.0</title>
   <style>
     :root {
       --bg-color: #0d0e12;
@@ -62,16 +62,31 @@
       flex-shrink: 0;
     }
 
+    .header-title-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .header-title {
       font-size: 13px;
       font-weight: 800;
       letter-spacing: 0.8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
       background: linear-gradient(135deg, var(--accent-neon), var(--accent-dancer));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+    }
+
+    /* バージョン表示用タグ */
+    .version-tag {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(0, 242, 254, 0.15);
+      color: var(--accent-neon);
+      border: 0.5px solid rgba(0, 242, 254, 0.3);
+      line-height: 1.2;
     }
 
     .btn-help {
@@ -490,7 +505,10 @@
 <body>
 
   <div class="header">
-    <div class="header-title">DANCE TRACE</div>
+    <div class="header-title-container">
+      <div class="header-title">DANCE TRACE</div>
+      <span class="version-tag">v1.0.0</span>
+    </div>
     <button class="btn-help" id="helpBtn" title="ヘルプ">
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
     </button>
