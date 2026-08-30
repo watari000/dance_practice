@@ -307,8 +307,9 @@
           <canvas id="canvas2"></canvas>
         </div>
 
-        <video id="video1" class="hidden-video" playsinline webkit-playsinline muted preload="auto"></video>
-        <video id="video2" class="hidden-video" playsinline webkit-playsinline preload="auto"></video>
+        <!-- iOS互換のための属性を追加 (playsinline, webkit-playsinline, muted設定) -->
+        <video id="video1" class="hidden-video" playsinline webkit-playsinline preload="auto"></video>
+        <video id="video2" class="hidden-video" playsinline webkit-playsinline muted preload="auto"></video>
 
         <div class="play-overlay" id="playOverlay">
           <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -400,27 +401,31 @@
     let isUserSeeking = false;
     let animFrameId = null;
 
+    // iOS Safari 必須設定: video2は常にミュート（動画1をマスター音声として使用）
+    video1.muted = false;
+    video2.muted = true;
+    video2.volume = 0;
+
     const transform1 = { x: 0, y: 0, scale: 1 };
     const transform2 = { x: 0, y: 0, scale: 1 };
 
     let box1Size = { width: 0, height: 0, dpr: 1 };
     let box2Size = { width: 0, height: 0, dpr: 1 };
 
-    // 高精細ディスプレイ(Retina)のぼやけ防止
     function updateCanvasSizes() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2); // 負荷軽減のため最大2倍まで
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const rect1 = box1.getBoundingClientRect();
       const rect2 = box2.getBoundingClientRect();
       
       if (rect1.width > 0 && rect1.height > 0) {
         box1Size = { width: rect1.width, height: rect1.height, dpr };
-        canvas1.width = rect1.width * dpr;
-        canvas1.height = rect1.height * dpr;
+        canvas1.width = Math.floor(rect1.width * dpr);
+        canvas1.height = Math.floor(rect1.height * dpr);
       }
       if (rect2.width > 0 && rect2.height > 0) {
         box2Size = { width: rect2.width, height: rect2.height, dpr };
-        canvas2.width = rect2.width * dpr;
-        canvas2.height = rect2.height * dpr;
+        canvas2.width = Math.floor(rect2.width * dpr);
+        canvas2.height = Math.floor(rect2.height * dpr);
       }
       renderOnce();
     }
@@ -456,9 +461,6 @@
       if (!video.videoWidth || !video.videoHeight || sizeInfo.width === 0 || sizeInfo.height === 0) return;
 
       const dpr = sizeInfo.dpr;
-      const cw = sizeInfo.width * dpr;
-      const ch = sizeInfo.height * dpr;
-
       ctx.save();
       ctx.scale(dpr, dpr);
 
@@ -481,39 +483,37 @@
       updateTimeline();
     }
 
-    // スムーズな音声同期：直接currentTimeを書き換えずに再生スピード（playbackRate）で微調整
+    // iOS向けの同期調整ロジック（動画1をベースに動画2のスピードを極小調整）
     function syncVideoDrift() {
-      if (!video1.src || !video2.src || video2.paused) return;
+      if (!video1.src || !video2.src || video1.paused || video2.paused) return;
 
-      const expectedTime1 = video2.currentTime + audioOffset;
-      const diff = video1.currentTime - expectedTime1;
+      const expectedTime2 = video1.currentTime - audioOffset;
+      const diff = video2.currentTime - expectedTime2;
 
       if (Math.abs(diff) > 0.3) {
-        // ズレが大きい場合のみ直接シーク
-        if (expectedTime1 >= 0 && expectedTime1 <= video1.duration) {
-          video1.currentTime = expectedTime1;
+        if (expectedTime2 >= 0 && expectedTime2 <= video2.duration) {
+          video2.currentTime = expectedTime2;
         }
       } else if (Math.abs(diff) > 0.03) {
-        // 僅かなズレは再生速度を微変更してシームレスに追いつかせる（カクつき防止）
-        video1.playbackRate = diff > 0 ? 0.95 : 1.05;
+        video2.playbackRate = diff > 0 ? 0.95 : 1.05;
       } else {
-        video1.playbackRate = 1.0;
+        video2.playbackRate = 1.0;
       }
     }
 
     function renderLoop() {
-      syncVideoDrift();
-
-      if (video1.src) drawFrame(ctx1, video1, box1Size, transform1);
-      if (video2.src) drawFrame(ctx2, video2, box2Size, transform2);
-
-      updateTimeline();
-
       const isPlaying = (!video1.paused && video1.src) || (!video2.paused && video2.src);
+
       if (isPlaying) {
-        // iOSで動画フレームの更新に合わせて描画を行う最適化
-        if ('requestVideoFrameCallback' in video2) {
-          video2.requestVideoFrameCallback(renderLoop);
+        syncVideoDrift();
+
+        if (video1.src) drawFrame(ctx1, video1, box1Size, transform1);
+        if (video2.src) drawFrame(ctx2, video2, box2Size, transform2);
+
+        updateTimeline();
+
+        if ('requestVideoFrameCallback' in video1) {
+          video1.requestVideoFrameCallback(renderLoop);
         } else {
           animFrameId = requestAnimationFrame(renderLoop);
         }
@@ -523,32 +523,40 @@
     async function togglePlay() {
       if (!video1.src && !video2.src) { alert("動画を選択してください"); return; }
 
-      const isPaused = video2.src ? video2.paused : video1.paused;
+      const mainVideo = video1.src ? video1 : video2;
+      const isPaused = mainVideo.paused;
 
       if (isPaused) {
         try {
-          if (video1.src) {
-            video1.muted = true;
-            const targetTime1 = (video2.src ? video2.currentTime : 0) + audioOffset;
-            if (targetTime1 >= 0 && targetTime1 <= video1.duration) {
-              video1.currentTime = targetTime1;
+          // iOS Safariの制限クリア用設定
+          video1.muted = false;
+          video2.muted = true;
+
+          if (video1.src && video2.src) {
+            const targetTime2 = video1.currentTime - audioOffset;
+            if (targetTime2 >= 0 && targetTime2 <= video2.duration) {
+              video2.currentTime = targetTime2;
             }
           }
 
-          if (video1.src) await video1.play();
-          if (video2.src) await video2.play();
+          // タップイベントのコンテキストで同期再生を開始
+          const playPromises = [];
+          if (video1.src) playPromises.push(video1.play());
+          if (video2.src) playPromises.push(video2.play());
+
+          await Promise.all(playPromises);
 
           updatePlayButtonUI(true);
-          cancelAnimationFrame(animFrameId);
+          if (animFrameId) cancelAnimationFrame(animFrameId);
           renderLoop();
         } catch (err) {
-          console.error("再生エラー:", err);
+          console.error("iOS再生制限エラー:", err);
         }
       } else {
         if (video1.src) video1.pause();
         if (video2.src) video2.pause();
         updatePlayButtonUI(false);
-        cancelAnimationFrame(animFrameId);
+        if (animFrameId) cancelAnimationFrame(animFrameId);
         renderOnce();
       }
     }
@@ -559,7 +567,7 @@
     });
 
     function updateTimeline() {
-      const mainVideo = video2.src ? video2 : video1;
+      const mainVideo = video1.src ? video1 : video2;
       if (mainVideo && mainVideo.duration && !isUserSeeking) {
         seekBar.value = (mainVideo.currentTime / mainVideo.duration) * 100;
         currentTimeText.textContent = formatTime(mainVideo.currentTime);
@@ -568,13 +576,13 @@
 
     seekBar.addEventListener('input', () => {
       isUserSeeking = true;
-      const mainVideo = video2.src ? video2 : video1;
+      const mainVideo = video1.src ? video1 : video2;
       if (mainVideo && mainVideo.duration) {
         const targetTime = (seekBar.value / 100) * mainVideo.duration;
-        if (video2.src) video2.currentTime = targetTime;
-        if (video1.src) {
-          const t1 = targetTime + audioOffset;
-          if (t1 >= 0 && t1 <= video1.duration) video1.currentTime = t1;
+        if (video1.src) video1.currentTime = targetTime;
+        if (video2.src) {
+          const t2 = targetTime - audioOffset;
+          if (t2 >= 0 && t2 <= video2.duration) video2.currentTime = t2;
         }
         currentTimeText.textContent = formatTime(targetTime);
         renderOnce();
@@ -697,11 +705,9 @@
     function setupVideo(videoEl, fileObj, isFirst) {
       if (!fileObj) return null;
 
-      if (isFirst) {
-        if (url1) URL.revokeObjectURL(url1);
-      } else {
-        if (url2) URL.revokeObjectURL(url2);
-      }
+      // 古いObjectURLを破棄してメモリ開放
+      if (isFirst && url1) URL.revokeObjectURL(url1);
+      if (!isFirst && url2) URL.revokeObjectURL(url2);
 
       const objectUrl = URL.createObjectURL(fileObj);
       videoEl.src = objectUrl;
@@ -709,7 +715,7 @@
 
       videoEl.onloadedmetadata = () => {
         updateCanvasSizes();
-        const mainVideo = video2.duration ? video2 : video1;
+        const mainVideo = video1.duration ? video1 : video2;
         if (mainVideo.duration) {
           durationText.textContent = formatTime(mainVideo.duration);
         }
@@ -738,7 +744,8 @@
     });
 
     async function extractAudioData(fileObj) {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = new AudioCtxClass();
       if (audioCtx.state === 'suspended') {
         await audioCtx.resume();
       }
@@ -863,10 +870,10 @@
           updateSyncUI();
           syncStatus.style.color = "var(--accent-green)";
 
-          if (video2.src && video1.src) {
-            const targetTime1 = video2.currentTime + audioOffset;
-            if (targetTime1 >= 0 && targetTime1 <= video1.duration) {
-              video1.currentTime = targetTime1;
+          if (video1.src && video2.src) {
+            const targetTime2 = video1.currentTime - audioOffset;
+            if (targetTime2 >= 0 && targetTime2 <= video2.duration) {
+              video2.currentTime = targetTime2;
             }
           }
           renderOnce();
