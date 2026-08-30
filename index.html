@@ -11,7 +11,7 @@
 
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2308090d'/%3E%3Cstop offset='50%25' stop-color='%23121520'/%3E%3Cstop offset='100%25' stop-color='%231a0b2e'/%3E%3C/linearGradient%3E%3ClinearGradient id='neon1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300f2fe'/%3E%3Cstop offset='100%25' stop-color='%237000ff'/%3E%3C/linearGradient%3E%3ClinearGradient id='neon2' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%2300ff87'/%3E%3Cstop offset='100%25' stop-color='%2360efff'/%3E%3C/linearGradient%3E%3Cfilter id='glow' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeGaussianBlur stdDeviation='12' result='blur'/%3E%3CfeMerge%3E%3CfeMergeNode in='blur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='512' height='512' rx='120' fill='url(%23bg)'/%3E%3Crect x='6' y='6' width='500' height='500' rx='114' fill='none' stroke='url(%23neon1)' stroke-width='4' opacity='0.4'/%3E%3Cpath d='M80 400 L120 400 M140 400 L160 400 M350 400 L370 400 M390 400 L430 400' stroke='url(%23neon1)' stroke-width='6' stroke-linecap='round' opacity='0.3'/%3E%3Cg filter='url(%23glow)'%3E%3Cpath d='M 120 380 Q 200 340 256 360 T 390 320' fill='none' stroke='url(%23neon2)' stroke-width='8' stroke-linecap='round' opacity='0.7'/%3E%3Cpath d='M-30 0 L10 20 L20 -10' transform='translate(380,310) rotate(15)' fill='none' stroke='url(%23neon2)' stroke-width='6' stroke-linecap='round'/%3E%3Cg transform='translate(256, 240)' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='20' cy='-110' r='24' fill='url(%23neon1)' stroke='none'/%3E%3Cpath d='M-10 -75 L20 -50 L70 -80 M20 -50 L50 -20 L90 -10' stroke='url(%23neon1)' stroke-width='22'/%3E%3Cpath d='M20 -50 L-30 -20 L-80 -40' stroke='url(%23neon1)' stroke-width='22'/%3E%3Cpath d='M-30 -20 L-20 50 L-70 110' stroke='url(%23neon1)' stroke-width='22'/%3E%3Cpath d='M-20 50 L40 70 L80 120' stroke='url(%23neon1)' stroke-width='20'/%3E%3Cpath d='M-10 -75 L20 -50 L70 -80' stroke='%23ffffff' stroke-width='8' opacity='0.9'/%3E%3Cpath d='M-30 -20 L-20 50 L-70 110' stroke='%23ffffff' stroke-width='8' opacity='0.9'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
 
-  <title>DANCE TRACE v1.6.0 (iOS Optimized)</title>
+  <title>DANCE TRACE v1.8.0 (iOS Smooth Dual Play)</title>
   <style>
     :root {
       --bg-color: #0d0e12;
@@ -87,6 +87,7 @@
       }
       .file-card { grid-column: span 1; }
       .sync-box { grid-column: span 2; }
+      .speed-box { grid-column: span 2; }
       .btn-lock, .btn-reset { grid-column: span 1; }
     }
 
@@ -168,6 +169,11 @@
       background: var(--card-bg); backdrop-filter: blur(20px);
       border: 0.5px solid var(--card-border); border-radius: 12px;
       padding: 0 14px; display: flex; align-items: center; gap: 12px; height: 42px;
+      position: relative;
+    }
+
+    .seekbar-wrapper {
+      position: relative; flex: 1; display: flex; align-items: center; height: 100%;
     }
 
     .time-text {
@@ -176,14 +182,31 @@
     }
 
     .seekBar {
-      flex: 1; height: 4px; -webkit-appearance: none;
+      width: 100%; height: 4px; -webkit-appearance: none;
       background: rgba(255, 255, 255, 0.2); border-radius: 2px; outline: none; cursor: pointer;
+      position: relative; z-index: 2;
     }
 
     .seekBar::-webkit-slider-thumb {
       -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
       background: var(--accent-neon); cursor: pointer; box-shadow: 0 0 10px var(--accent-neon);
     }
+
+    .drift-marker-container {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 3;
+    }
+
+    .drift-marker {
+      position: absolute; top: 50%; transform: translate(-50%, -50%);
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--accent-red); background: rgba(255, 0, 85, 0.35);
+      box-shadow: 0 0 10px rgba(255, 0, 85, 0.8);
+      pointer-events: auto; cursor: pointer; transition: transform 0.15s ease;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 800; color: #fff;
+    }
+    .drift-marker:active { transform: translate(-50%, -50%) scale(1.3); }
 
     .sidebar-controls { width: 170px; display: flex; flex-direction: column; gap: 8px; height: 100%; }
 
@@ -205,14 +228,26 @@
       overflow: hidden; text-overflow: ellipsis;
     }
 
-    .sync-box {
+    .sync-box, .speed-box {
       background: var(--card-bg); backdrop-filter: blur(20px);
       border: 0.5px solid var(--card-border); border-radius: 10px;
       padding: 8px; display: flex; flex-direction: column; gap: 6px;
     }
 
+    .speed-title { font-size: 10px; font-weight: 700; color: var(--text-sub); text-align: center; }
+
+    .speed-btn-group { display: flex; gap: 4px; }
+    .speed-btn {
+      flex: 1; height: 26px; border-radius: 6px; border: 0.5px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.05); color: var(--text-main);
+      font-size: 9px; font-weight: 700; cursor: pointer; transition: all 0.15s ease; padding: 0;
+    }
+    .speed-btn.active {
+      background: var(--accent-neon); color: #000; font-weight: 800; border-color: var(--accent-neon);
+    }
+
     .btn {
-      height: 36px; padding: 0 8px; border-radius: 8px; border: none;
+      height: 34px; padding: 0 8px; border-radius: 8px; border: none;
       font-size: 11px; font-weight: 700; display: inline-flex;
       align-items: center; justify-content: center; gap: 4px;
       cursor: pointer; transition: all 0.15s ease; width: 100%;
@@ -279,7 +314,7 @@
   <div class="header">
     <div class="header-title-container">
       <div class="header-title">DANCE TRACE</div>
-      <span class="version-tag" id="versionTag">v1.6.0</span>
+      <span class="version-tag" id="versionTag">v1.8.0</span>
     </div>
     <button class="btn-help" id="helpBtn">
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
@@ -307,7 +342,6 @@
           <canvas id="canvas2"></canvas>
         </div>
 
-        <!-- iOS互換のための属性を追加 (playsinline, webkit-playsinline, muted設定) -->
         <video id="video1" class="hidden-video" playsinline webkit-playsinline preload="auto"></video>
         <video id="video2" class="hidden-video" playsinline webkit-playsinline muted preload="auto"></video>
 
@@ -318,7 +352,10 @@
 
       <div class="unified-timeline">
         <span class="time-text" id="currentTimeText">00:00</span>
-        <input type="range" class="seekBar" id="seekBar" value="0" min="0" max="100" step="0.1">
+        <div class="seekbar-wrapper">
+          <input type="range" class="seekBar" id="seekBar" value="0" min="0" max="100" step="0.1">
+          <div class="drift-marker-container" id="driftMarkerContainer"></div>
+        </div>
         <span class="time-text" id="durationText" style="color: var(--text-sub);">00:00</span>
       </div>
     </div>
@@ -334,6 +371,16 @@
         <div class="file-header" style="color: var(--accent-green);">📁 動画2 (USER)</div>
         <div class="file-name" id="fileName2">選択してください</div>
         <input type="file" id="videoInput2" accept="video/*">
+      </div>
+
+      <div class="speed-box">
+        <div class="speed-title">再生速度</div>
+        <div class="speed-btn-group">
+          <button class="speed-btn" data-speed="0.5">0.5x</button>
+          <button class="speed-btn" data-speed="0.75">0.75x</button>
+          <button class="speed-btn active" data-speed="1.0">1.0x</button>
+          <button class="speed-btn" data-speed="1.25">1.25x</button>
+        </div>
       </div>
 
       <div class="sync-box">
@@ -359,7 +406,11 @@
         </div>
         <div class="step-item">
           <div class="step-num">2</div>
-          <div><b>⚡ 音声自動同期</b><br>ビート音の立ち上がりを解析して完全同期させます。</div>
+          <div><b>⚡ 音声自動同期</b><br>ビート音を解析して同期します。ズレが大きいポイントには赤丸を表示します。</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div><b>動画内のズレ丸表示</b><br>シークバーの赤丸をタップすると2秒前から再生。ズレタイミングに達すると動画内にターゲット丸印が表示されます。</div>
         </div>
       </div>
       <button class="modal-close-btn" id="closeGuideModalBtn">閉じる</button>
@@ -388,6 +439,7 @@
     const seekBar = document.getElementById('seekBar');
     const currentTimeText = document.getElementById('currentTimeText');
     const durationText = document.getElementById('durationText');
+    const driftMarkerContainer = document.getElementById('driftMarkerContainer');
     const box1 = document.getElementById('box1');
     const box2 = document.getElementById('box2');
     const guideModal = document.getElementById('guideModal');
@@ -397,11 +449,13 @@
     let url1 = null, url2 = null;
     let fileObj1 = null, fileObj2 = null;
     let audioOffset = 0.0;
+    let currentSpeed = 1.0;
     let isLocked = false;
     let isUserSeeking = false;
     let animFrameId = null;
+    let detectedDriftPoints = []; // 検出されたズレ地点配列
+    let lastSyncCorrectionTime = 0; // iOSでのカクつき防止用タイマー
 
-    // iOS Safari 必須設定: video2は常にミュート（動画1をマスター音声として使用）
     video1.muted = false;
     video2.muted = true;
     video2.volume = 0;
@@ -436,6 +490,16 @@
     helpBtn.addEventListener('click', () => guideModal.classList.add('show'));
     closeGuideModalBtn.addEventListener('click', () => guideModal.classList.remove('show'));
 
+    document.querySelectorAll('.speed-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentSpeed = parseFloat(e.target.getAttribute('data-speed'));
+        video1.playbackRate = currentSpeed;
+        video2.playbackRate = currentSpeed;
+      });
+    });
+
     function formatTime(sec) {
       if (isNaN(sec) || sec < 0) return "00:00";
       const m = Math.floor(sec / 60);
@@ -457,7 +521,8 @@
       }
     }
 
-    function drawFrame(ctx, video, sizeInfo, transform) {
+    // 動画フレームの描画および画面上の赤丸（ターゲット）描画
+    function drawFrame(ctx, video, sizeInfo, transform, isUserVideo = false) {
       if (!video.videoWidth || !video.videoHeight || sizeInfo.width === 0 || sizeInfo.height === 0) return;
 
       const dpr = sizeInfo.dpr;
@@ -474,30 +539,57 @@
       ctx.translate(sizeInfo.width / 2 + transform.x, sizeInfo.height / 2 + transform.y);
       ctx.scale(transform.scale, transform.scale);
       ctx.drawImage(video, -dw / 2, -dh / 2, dw, dh);
+
+      // 動画内（USER側）のズレ位置に画面上のターゲット赤丸を描画
+      if (isUserVideo && detectedDriftPoints.length > 0) {
+        const curTime = video1.currentTime;
+        // 現在の再生時刻がズレ検出ポイントの前後0.8秒以内にあるか判定
+        const activeDrift = detectedDriftPoints.find(p => Math.abs(curTime - p.timeSec) < 0.8);
+
+        if (activeDrift) {
+          const radius = Math.min(dw, dh) * 0.22; // 画面サイズに合わせた動的サイズ
+          
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, Math.PI * 2);
+          ctx.lineWidth = 6;
+          ctx.strokeStyle = '#ff0055';
+          ctx.shadowColor = '#ff0055';
+          ctx.shadowBlur = 20;
+          ctx.stroke();
+
+          // 内側に番号テキストを表示
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 24px -apple-system, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowBlur = 0;
+          ctx.fillText(`! ズレ ${activeDrift.index}`, 0, 0);
+        }
+      }
+
       ctx.restore();
     }
 
     function renderOnce() {
-      if (video1.src) drawFrame(ctx1, video1, box1Size, transform1);
-      if (video2.src) drawFrame(ctx2, video2, box2Size, transform2);
+      if (video1.src) drawFrame(ctx1, video1, box1Size, transform1, false);
+      if (video2.src) drawFrame(ctx2, video2, box2Size, transform2, true);
       updateTimeline();
     }
 
-    // iOS向けの同期調整ロジック（動画1をベースに動画2のスピードを極小調整）
+    // iOSでのカクつきを防ぐマイルドな同期制御（1秒に1回以上の極端なseek処理を行わない）
     function syncVideoDrift() {
       if (!video1.src || !video2.src || video1.paused || video2.paused) return;
 
+      const now = Date.now();
       const expectedTime2 = video1.currentTime - audioOffset;
       const diff = video2.currentTime - expectedTime2;
 
-      if (Math.abs(diff) > 0.3) {
+      // 0.15秒以上のズレがあり、かつ前回の修正から1.2秒以上経っている場合のみ同期
+      if (Math.abs(diff) > 0.15 && (now - lastSyncCorrectionTime > 1200)) {
         if (expectedTime2 >= 0 && expectedTime2 <= video2.duration) {
           video2.currentTime = expectedTime2;
+          lastSyncCorrectionTime = now;
         }
-      } else if (Math.abs(diff) > 0.03) {
-        video2.playbackRate = diff > 0 ? 0.95 : 1.05;
-      } else {
-        video2.playbackRate = 1.0;
       }
     }
 
@@ -507,8 +599,8 @@
       if (isPlaying) {
         syncVideoDrift();
 
-        if (video1.src) drawFrame(ctx1, video1, box1Size, transform1);
-        if (video2.src) drawFrame(ctx2, video2, box2Size, transform2);
+        if (video1.src) drawFrame(ctx1, video1, box1Size, transform1, false);
+        if (video2.src) drawFrame(ctx2, video2, box2Size, transform2, true);
 
         updateTimeline();
 
@@ -528,9 +620,10 @@
 
       if (isPaused) {
         try {
-          // iOS Safariの制限クリア用設定
           video1.muted = false;
           video2.muted = true;
+          video1.playbackRate = currentSpeed;
+          video2.playbackRate = currentSpeed;
 
           if (video1.src && video2.src) {
             const targetTime2 = video1.currentTime - audioOffset;
@@ -539,7 +632,6 @@
             }
           }
 
-          // タップイベントのコンテキストで同期再生を開始
           const playPromises = [];
           if (video1.src) playPromises.push(video1.play());
           if (video2.src) playPromises.push(video2.play());
@@ -550,7 +642,7 @@
           if (animFrameId) cancelAnimationFrame(animFrameId);
           renderLoop();
         } catch (err) {
-          console.error("iOS再生制限エラー:", err);
+          console.error("再生エラー:", err);
         }
       } else {
         if (video1.src) video1.pause();
@@ -574,18 +666,26 @@
       }
     }
 
+    function seekToTime(targetTime) {
+      const mainVideo = video1.src ? video1 : video2;
+      if (!mainVideo || !mainVideo.duration) return;
+
+      const clampedTime = Math.max(0, Math.min(targetTime, mainVideo.duration));
+      if (video1.src) video1.currentTime = clampedTime;
+      if (video2.src) {
+        const t2 = clampedTime - audioOffset;
+        if (t2 >= 0 && t2 <= video2.duration) video2.currentTime = t2;
+      }
+      currentTimeText.textContent = formatTime(clampedTime);
+      seekBar.value = (clampedTime / mainVideo.duration) * 100;
+      renderOnce();
+    }
+
     seekBar.addEventListener('input', () => {
       isUserSeeking = true;
       const mainVideo = video1.src ? video1 : video2;
       if (mainVideo && mainVideo.duration) {
-        const targetTime = (seekBar.value / 100) * mainVideo.duration;
-        if (video1.src) video1.currentTime = targetTime;
-        if (video2.src) {
-          const t2 = targetTime - audioOffset;
-          if (t2 >= 0 && t2 <= video2.duration) video2.currentTime = t2;
-        }
-        currentTimeText.textContent = formatTime(targetTime);
-        renderOnce();
+        seekToTime((seekBar.value / 100) * mainVideo.duration);
       }
     });
 
@@ -705,7 +805,6 @@
     function setupVideo(videoEl, fileObj, isFirst) {
       if (!fileObj) return null;
 
-      // 古いObjectURLを破棄してメモリ開放
       if (isFirst && url1) URL.revokeObjectURL(url1);
       if (!isFirst && url2) URL.revokeObjectURL(url2);
 
@@ -731,6 +830,8 @@
         fileName1.textContent = fileObj1.name;
         url1 = setupVideo(video1, fileObj1, true);
         updatePlayButtonUI(false);
+        driftMarkerContainer.innerHTML = '';
+        detectedDriftPoints = [];
       }
     });
 
@@ -740,6 +841,8 @@
         fileName2.textContent = fileObj2.name;
         url2 = setupVideo(video2, fileObj2, false);
         updatePlayButtonUI(false);
+        driftMarkerContainer.innerHTML = '';
+        detectedDriftPoints = [];
       }
     });
 
@@ -791,6 +894,64 @@
       }
 
       return onset;
+    }
+
+    function detectTopDrifts(onset1, onset2, bestFineShift, fps) {
+      const numFrames = Math.min(onset1.length, onset2.length);
+      const diffs = [];
+
+      for (let i = 0; i < numFrames; i++) {
+        const j = i + bestFineShift;
+        if (j >= 0 && j < onset1.length) {
+          const diff = Math.abs(onset1[j] - onset2[i]);
+          diffs.push({ timeSec: j / fps, diff });
+        }
+      }
+
+      const minIntervalSec = 3.0;
+      diffs.sort((a, b) => b.diff - a.diff);
+
+      const topPoints = [];
+      for (const item of diffs) {
+        if (topPoints.length >= 5) break;
+        const isFarEnough = topPoints.every(p => Math.abs(p.timeSec - item.timeSec) >= minIntervalSec);
+        if (isFarEnough && item.timeSec > 2.0) {
+          topPoints.push(item);
+        }
+      }
+
+      topPoints.sort((a, b) => a.timeSec - b.timeSec);
+      return topPoints.map((pt, idx) => ({ ...pt, index: idx + 1 }));
+    }
+
+    function renderDriftMarkers(topPoints) {
+      driftMarkerContainer.innerHTML = '';
+      const mainVideo = video1.duration ? video1 : video2;
+      if (!mainVideo || !mainVideo.duration) return;
+
+      const duration = mainVideo.duration;
+
+      topPoints.forEach((pt) => {
+        const percent = (pt.timeSec / duration) * 100;
+        if (percent < 0 || percent > 100) return;
+
+        const marker = document.createElement('div');
+        marker.className = 'drift-marker';
+        marker.style.left = `${percent}%`;
+        marker.textContent = pt.index;
+
+        marker.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const targetTime = Math.max(0, pt.timeSec - 2.0);
+          seekToTime(targetTime);
+
+          if (video1.paused && video2.paused) {
+            await togglePlay();
+          }
+        });
+
+        driftMarkerContainer.appendChild(marker);
+      });
     }
 
     async function syncAudio() {
@@ -869,6 +1030,9 @@
           audioOffset = bestFineShift / fineFps;
           updateSyncUI();
           syncStatus.style.color = "var(--accent-green)";
+
+          detectedDriftPoints = detectTopDrifts(onset1_coarse, onset2_coarse, bestCoarseShift, coarseFps);
+          renderDriftMarkers(detectedDriftPoints);
 
           if (video1.src && video2.src) {
             const targetTime2 = video1.currentTime - audioOffset;
