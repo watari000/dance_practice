@@ -88,7 +88,7 @@
     }
     .btn-help svg { width: 15px; height: 15px; fill: currentColor; }
 
-    /* メインボディ：横画面デフォルト制御 */
+    /* メインボディ */
     .app-body {
       flex: 1;
       display: flex;
@@ -100,7 +100,7 @@
       height: calc(100dvh - 38px);
     }
 
-    /* 縦持ち（Portrait）時のUI最適化：横長画面であることを強調 */
+    /* 縦持ち（Portrait）時のUI最適化 */
     @media screen and (orientation: portrait) {
       .app-body {
         flex-direction: column;
@@ -109,7 +109,7 @@
       }
       .player-main {
         height: auto !important;
-        aspect-ratio: 16 / 9; /* 強制的に横長シアター比率にする */
+        aspect-ratio: 16 / 9;
       }
       .sidebar-controls {
         width: 100% !important;
@@ -363,12 +363,6 @@
       opacity: 0.8;
     }
 
-    .btn svg {
-      width: 14px;
-      height: 14px;
-      fill: currentColor;
-    }
-
     .btn-sync {
       background: linear-gradient(135deg, var(--accent-dancer), var(--accent-neon));
       color: #000000;
@@ -511,7 +505,7 @@
           <div class="grid-overlay"></div>
           <div class="grid-center-line-v"></div>
           <div class="grid-center-line-h"></div>
-          <video id="video1" playsinline webkit-playsinline preload="auto" crossorigin="anonymous"></video>
+          <video id="video1" playsinline webkit-playsinline preload="metadata" crossorigin="anonymous"></video>
           <canvas id="canvas1"></canvas>
         </div>
 
@@ -521,7 +515,7 @@
           <div class="grid-overlay"></div>
           <div class="grid-center-line-v"></div>
           <div class="grid-center-line-h"></div>
-          <video id="video2" playsinline webkit-playsinline preload="auto" crossorigin="anonymous"></video>
+          <video id="video2" playsinline webkit-playsinline preload="metadata" crossorigin="anonymous"></video>
           <canvas id="canvas2"></canvas>
         </div>
 
@@ -636,6 +630,7 @@
     let audioOffset = 0;
     let isLocked = false;
     let isUserSeeking = false;
+    let animFrameId = null;
 
     const transform1 = { x: 0, y: 0, scale: 1 };
     const transform2 = { x: 0, y: 0, scale: 1 };
@@ -672,14 +667,17 @@
         alignVideoTime();
         video1.play(); video2.play();
         updatePlayButtonUI(true);
+        startLoop();
       } else {
         video1.pause(); video2.pause();
         updatePlayButtonUI(false);
+        stopLoop();
       }
     }
 
     document.getElementById('videoArea').addEventListener('click', togglePlay);
 
+    // 単発枠描画（描画の軽量化）
     function renderFrame() {
       const w1 = canvas1.width || 300, h1 = canvas1.height || 400;
       ctx1.clearRect(0, 0, w1, h1);
@@ -713,11 +711,24 @@
           seekBar.value = (video2.currentTime / video2.duration) * 100;
           currentTimeText.textContent = formatTime(video2.currentTime);
         }
+        renderFrame();
+        animFrameId = requestAnimationFrame(loop);
+      } else {
+        stopLoop();
       }
-      renderFrame();
-      requestAnimationFrame(loop);
     }
-    requestAnimationFrame(loop);
+
+    function startLoop() {
+      stopLoop();
+      animFrameId = requestAnimationFrame(loop);
+    }
+
+    function stopLoop() {
+      if (animFrameId) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+      }
+    }
 
     seekBar.addEventListener('input', () => {
       isUserSeeking = true;
@@ -726,15 +737,17 @@
         video2.currentTime = targetTime;
         video1.currentTime = targetTime + audioOffset;
         currentTimeText.textContent = formatTime(targetTime);
+        renderFrame();
       }
     });
 
     seekBar.addEventListener('change', () => { isUserSeeking = false; });
 
     [video1, video2].forEach(v => {
-      v.addEventListener('ended', () => { video1.pause(); video2.pause(); updatePlayButtonUI(false); });
-      v.addEventListener('pause', () => { if (video1.paused && video2.paused) updatePlayButtonUI(false); });
-      v.addEventListener('play', () => { updatePlayButtonUI(true); });
+      v.addEventListener('ended', () => { video1.pause(); video2.pause(); updatePlayButtonUI(false); stopLoop(); });
+      v.addEventListener('pause', () => { if (video1.paused && video2.paused) { updatePlayButtonUI(false); stopLoop(); } });
+      v.addEventListener('play', () => { updatePlayButtonUI(true); startLoop(); });
+      v.addEventListener('seeked', renderFrame);
     });
 
     function setupTouchControl(boxEl, transformObj) {
@@ -790,21 +803,26 @@
       }
     });
 
+    // iPhone用最適化：画面解像度のリサイズ制御＆旧データ完全解放
     function setupVideo(videoEl, fileObj, canvasEl, isFirst) {
       if (!fileObj) return null;
       
-      if (isFirst && url1) URL.revokeObjectURL(url1);
-      if (!isFirst && url2) URL.revokeObjectURL(url2);
+      if (isFirst) {
+        if (url1) { URL.revokeObjectURL(url1); video1.removeAttribute('src'); video1.load(); }
+      } else {
+        if (url2) { URL.revokeObjectURL(url2); video2.removeAttribute('src'); video2.load(); }
+      }
 
       const objectUrl = URL.createObjectURL(fileObj);
       videoEl.src = objectUrl;
 
-      videoEl.onloadeddata = () => {
-        const MAX_DIM = 720;
+      videoEl.onloadedmetadata = () => {
+        // 解像度を最大540pxに抑えてメモリを大幅削減（iPhoneのクラッシュ防止）
+        const MAX_DIM = 540;
         let w = videoEl.videoWidth || 360;
         let h = videoEl.videoHeight || 640;
         if (w > MAX_DIM || h > MAX_DIM) {
-          const ratio = Math.min(MAX_DIM / w, Math.round(h * (MAX_DIM / w)));
+          const ratio = Math.min(MAX_DIM / w, MAX_DIM / h);
           w = Math.round(w * ratio);
           h = Math.round(h * ratio);
         }
@@ -838,6 +856,7 @@
       }
     });
 
+    // 音声自動同期（サンプリングの間引き・高効率処理）
     async function syncAudio() {
       if (!fileObj1 || !fileObj2) { alert("両方の動画を選択してください"); return; }
       syncStatus.textContent = "解析中...";
@@ -856,9 +875,10 @@
           const d2 = buf2.getChannelData(0);
           const sampleRate = buf1.sampleRate;
 
-          const targetDuration = Math.min(10, buf1.duration, buf2.duration);
+          // メモリ保護のため最初の8秒間だけ解析
+          const targetDuration = Math.min(8, buf1.duration, buf2.duration);
           const samplesToAnalyze = Math.floor(targetDuration * sampleRate);
-          const step = Math.floor(sampleRate / 2000);
+          const step = Math.floor(sampleRate / 1000); // 間引き率を上げて超軽量化
 
           const s1 = [], s2 = [];
           let sum1 = 0, sum2 = 0;
@@ -871,6 +891,8 @@
             sum1 += v1 * v1;
             sum2 += v2 * v2;
           }
+
+          audioCtx.close(); // 音声コンテキストの完全破棄（メモリ解放）
 
           const maxShift = Math.floor(5 * (sampleRate / step));
           let bestOffset = 0;
