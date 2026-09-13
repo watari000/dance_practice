@@ -404,7 +404,7 @@
         </ul>
       </div>
       <div class="modal-footer">
-        <div class="version-text">DANCE BEAT VISION Ver 4.3.0</div>
+        <div class="version-text">DANCE BEAT VISION Ver 4.4.0 (iOS Stable)</div>
       </div>
     </div>
   </div>
@@ -432,6 +432,7 @@
     let isSeeking = false;
     let warmUpFrames = 0;
     let isProcessingPose = false;
+    let frameCounter = 0;
 
     let audioEnergyTimeline = [];
     let audioSampleRate = 100;
@@ -531,11 +532,8 @@
 
     pose.onResults((results) => {
       isProcessingPose = false;
-      if (!results.poseLandmarks || isSeeking) return;
-
       if (warmUpFrames > 0) {
         warmUpFrames--;
-        return;
       }
     });
 
@@ -606,7 +604,7 @@
       }
     }
 
-    // --- Render Loop ---
+    // --- Render Loop (iOS安定化対策：描画とポーズ処理を分離・間引き) ---
     video.addEventListener('play', () => {
       resizeCanvas();
       renderLoop();
@@ -615,11 +613,14 @@
     function renderLoop() {
       if (video.paused || video.ended) return;
 
-      if (!isProcessingPose && !isSeeking && video.readyState >= 2) {
+      frameCounter++;
+      // iOSでの過負荷を防ぐため、MediaPipeへの送信は2フレームに1回に間引く
+      if (frameCounter % 2 === 0 && !isProcessingPose && !isSeeking && video.readyState >= 2) {
         isProcessingPose = true;
         pose.send({ image: video }).catch(() => { isProcessingPose = false; });
       }
 
+      // 描画と判定は毎フレーム確実に実行（これでリングが消えません）
       try {
         evaluateDance(video.currentTime || 0);
       } catch (err) {}
@@ -663,7 +664,7 @@
       const timeDiff = evaluatedTime - nearestBeatTime; 
       const rawDiff = Math.abs(timeDiff);
 
-      // --- タイミング判定ロジック（大きなズレは赤） ---
+      // --- タイミング判定ロジック ---
       if (!isSeeking && warmUpFrames === 0 && nearestBeatIdx !== -1) {
         if (!evaluatedBeats.has(nearestBeatIdx) && rawDiff <= WINDOW_TIMING) {
           
@@ -685,7 +686,7 @@
           } else {
             currentJudge = timeDiff < 0 ? "EARLY" : "LATE";
             evaluatedStatus = "timing";
-            glowColorHex = "#ef4444"; // 大きなズレは赤
+            glowColorHex = "#ef4444";
             judgeText.className = "judge-display timing";
           }
 
@@ -768,7 +769,7 @@
           case 'perfect': timelineCtx.fillStyle = '#00ff66'; break;
           case 'great': timelineCtx.fillStyle = '#00f0ff'; break;
           case 'good': timelineCtx.fillStyle = '#ffcc00'; break;
-          case 'timing': timelineCtx.fillStyle = '#ef4444'; break; // タイムラインのズレも赤
+          case 'timing': timelineCtx.fillStyle = '#ef4444'; break;
         }
         timelineCtx.fillRect(x - blockWidth / 2, 0, blockWidth, h);
       });
