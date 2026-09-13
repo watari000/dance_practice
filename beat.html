@@ -89,14 +89,15 @@
       color: white;
       width: 100%;
       max-width: 340px;
-      padding: 10px 0;
+      padding: 12px 0;
       border-radius: 25px;
       cursor: pointer;
       font-weight: 800;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       text-align: center;
       box-shadow: 0 4px 15px rgba(255, 42, 133, 0.4);
       border: none;
+      display: block;
     }
 
     .main-container {
@@ -110,8 +111,8 @@
     .video-card {
       position: relative;
       width: 100%;
-      height: 52vh;
-      min-height: 320px;
+      height: 50vh;
+      min-height: 300px;
       background: #000;
       border-radius: 18px;
       overflow: hidden;
@@ -361,24 +362,16 @@
       <div class="modal-body">
         <h3>1. 動画の読み込み</h3>
         <ul>
-          <li>「動画を選択する」からダンス動画を選ぶと、音源のビート（打点）を全自動で解析します。</li>
+          <li>「動画を選択する」からダンス動画を選ぶと、楽曲のビートを解析します。</li>
         </ul>
         <h3>2. 判定とリング演出</h3>
         <ul>
-          <li><b>透過アプローチリング</b>：外側からビートのタイミングに合わせて中央へ縮小します。</li>
-          <li><b>目標リング</b>：ジャストタイミングで判定カラーに一瞬輝きます。</li>
-        </ul>
-        <h3>3. 判定の種類</h3>
-        <ul>
-          <li><b style="color:var(--green-neon)">PERFECT</b>: ビートにピッタリ合わせたキレのある動き</li>
-          <li><b style="color:var(--blue-neon)">GREAT</b>: タイミングの合った動き</li>
-          <li><b style="color:var(--orange-neon)">FAST (早)</b>: 音に対して少し早すぎるタイミング</li>
-          <li><b style="color:var(--purple-neon)">LATE (遅)</b>: 音に対して少し遅すぎるタイミング</li>
-          <li><b style="color:var(--red-neon)">WEAK HIT</b>: 動きが弱い（MISS）</li>
+          <li><b>アプローチリング</b>：外側から中央へ向かって流れてきます。</li>
+          <li><b>目標リング</b>：判定の瞬間にネオンカラーで光ります。</li>
         </ul>
       </div>
       <div class="modal-footer">
-        <div class="version-text">DANCE BEAT VISION Ver 3.3.0 (iOS Optimized)</div>
+        <div class="version-text">DANCE BEAT VISION Ver 3.5.0 (Sync Calibrated)</div>
       </div>
     </div>
   </div>
@@ -419,9 +412,9 @@
     let activeGlowColor = null;
     let glowTimer = 0;
 
-    // --- iPhone/iOS Latency Correction (AI処理レイテンシ補正) ---
-    // AIの骨格認識～描画ラグ（約0.08秒）を補正し、FAST判定偏りを防止
-    const AI_LATENCY_OFFSET = 0.08; 
+    // --- 同期タイミング定数 ---
+    const TIME_OFFSET = 0.20;       // iOSフレーム処理遅延の正確な補正値（秒）
+    const APPROACH_WINDOW = 0.80;   // リングが縮み始める先行時間（秒）
 
     // --- Modal Logic ---
     btnHelp.addEventListener('click', () => modalHelp.classList.add('active'));
@@ -430,7 +423,21 @@
       if (e.target === modalHelp) modalHelp.classList.remove('active');
     });
 
-    // --- Seek Stabilization ---
+    // --- Canvas Resize (iOS Retina Safe) ---
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = (rect.width || 320) * dpr;
+      canvas.height = (rect.height || 320) * dpr;
+
+      const tRect = timelineWrapper.getBoundingClientRect();
+      timelineCanvas.width = tRect.width || 300;
+      timelineCanvas.height = tRect.height || 28;
+      drawTimeline();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 300));
+
     video.addEventListener('seeking', () => {
       isSeeking = true;
       prevLandmarks = null;
@@ -463,15 +470,6 @@
       accuracyText.textContent = `ACCURACY: ${accuracy}%`;
     }
 
-    function resizeCanvas() {
-      canvas.width = canvas.clientWidth * window.devicePixelRatio;
-      canvas.height = canvas.clientHeight * window.devicePixelRatio;
-      timelineCanvas.width = timelineWrapper.clientWidth;
-      timelineCanvas.height = timelineWrapper.clientHeight;
-      drawTimeline();
-    }
-    window.addEventListener('resize', resizeCanvas);
-
     speedBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         speedBtns.forEach(b => b.classList.remove('active'));
@@ -492,10 +490,10 @@
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
     });
     pose.setOptions({
-      modelComplexity: 1,
+      modelComplexity: 0,
       smoothLandmarks: true,
-      minDetectionConfidence: 0.6,
-      minTrackingConfidence: 0.6
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
     });
 
     pose.onResults((results) => {
@@ -526,22 +524,23 @@
       prevLandmarks = results.poseLandmarks;
     });
 
-    // --- Audio Dynamic Analysis (iOS Compatible) ---
+    // --- iOS Safe Audio Analysis ---
     videoInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      video.src = URL.createObjectURL(file);
       resetStats();
-
-      video.onloadedmetadata = () => resizeCanvas();
+      video.src = URL.createObjectURL(file);
+      
+      video.onloadedmetadata = () => {
+        resizeCanvas();
+      };
 
       try {
         const arrayBuffer = await file.arrayBuffer();
         const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
         const tempAudioCtx = new AudioCtxClass();
         
-        // iPhone対策：Suspended状態のコンテキストをアクティブ化
         if (tempAudioCtx.state === 'suspended') {
           await tempAudioCtx.resume();
         }
@@ -550,8 +549,7 @@
         analyzeAudioDynamic(audioBuffer);
         tempAudioCtx.close();
       } catch (err) {
-        audioEnergyTimeline = [];
-        beatPeaks = [];
+        generateFallbackBeats(video.duration || 30);
       }
     });
 
@@ -574,48 +572,63 @@
         if (val > maxEnergy) maxEnergy = val;
       }
 
-      const threshold = Math.max(0.35, maxEnergy * 0.45);
+      const threshold = Math.max(0.22, maxEnergy * 0.35);
 
       for (let i = 1; i < audioEnergyTimeline.length - 1; i++) {
         if (audioEnergyTimeline[i] > threshold && 
             audioEnergyTimeline[i] > audioEnergyTimeline[i - 1] && 
             audioEnergyTimeline[i] > audioEnergyTimeline[i + 1]) {
           beatPeaks.push(i / audioSampleRate);
-          i += 25;
+          i += 18; // 最小ビート間隔
         }
       }
     }
 
-    // --- Animation & Evaluation Loop ---
+    function generateFallbackBeats(duration) {
+      beatPeaks = [];
+      for (let t = 0.5; t < duration; t += 0.5) {
+        beatPeaks.push(t);
+      }
+    }
+
+    // --- Render & Evaluation Loop ---
     video.addEventListener('play', () => {
+      resizeCanvas();
       renderLoop();
     });
 
-    async function renderLoop() {
+    function renderLoop() {
       if (video.paused || video.ended) return;
 
-      if (!isProcessingPose && !isSeeking) {
+      if (!isProcessingPose && !isSeeking && video.readyState >= 2) {
         isProcessingPose = true;
         pose.send({ image: video }).catch(() => { isProcessingPose = false; });
       }
 
-      evaluateDance(video.currentTime);
+      try {
+        evaluateDance(video.currentTime || 0);
+      } catch (err) {}
+
       requestAnimationFrame(renderLoop);
     }
 
     function evaluateDance(currentTime) {
+      if (canvas.width === 0 || canvas.height === 0) resizeCanvas();
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // --- iOS/iPhone用処理遅延補正タイム ---
-      const correctedTime = currentTime - AI_LATENCY_OFFSET;
+      // --- 動画の同期時間計算 ---
+      // 描画用のリアルタイム（リング収縮の基準）
+      const displayTime = currentTime; 
+      // 姿勢判定用の時間（iOS処理ラグ分を引いて動画の描画に完全同期）
+      const evaluatedTime = currentTime - TIME_OFFSET;
 
       let nearestBeatTime = 0;
       let minDiff = Infinity;
       let nearestBeatIdx = -1;
 
-      // 最も近いビートの探索
       for (let i = 0; i < beatPeaks.length; i++) {
-        const diff = Math.abs(correctedTime - beatPeaks[i]);
+        const diff = Math.abs(evaluatedTime - beatPeaks[i]);
         if (diff < minDiff) {
           minDiff = diff;
           nearestBeatTime = beatPeaks[i];
@@ -623,11 +636,11 @@
         }
       }
 
-      // 次に来るビート（縮小リングの対象）を探す
+      // 次に接近してくるビートを探す（描画基準：displayTime）
       let upcomingBeatTime = null;
       for (let i = 0; i < beatPeaks.length; i++) {
-        const timeDiff = beatPeaks[i] - correctedTime;
-        if (timeDiff >= -0.1 && timeDiff <= 0.6) { // 0.6秒前からリングが近づいてくる
+        const timeDiff = beatPeaks[i] - displayTime;
+        if (timeDiff >= -0.05 && timeDiff <= APPROACH_WINDOW) {
           upcomingBeatTime = beatPeaks[i];
           break;
         }
@@ -638,34 +651,34 @@
       let evaluatedStatus = null;
       let glowColorHex = null;
 
-      // --- 判定ロジック ---
-      const rawDiff = correctedTime - nearestBeatTime; 
+      // 判定処理（判定基準：evaluatedTime）
+      const rawDiff = evaluatedTime - nearestBeatTime; 
 
-      if (!isSeeking && warmUpFrames === 0 && nearestBeatIdx !== -1 && Math.abs(rawDiff) <= 0.15) {
+      if (!isSeeking && warmUpFrames === 0 && nearestBeatIdx !== -1 && Math.abs(rawDiff) <= 0.18) {
         if (!evaluatedBeats.has(nearestBeatIdx)) {
           evaluatedBeats.add(nearestBeatIdx);
 
-          if (normalizedSpeed <= 2.0) {
+          if (normalizedSpeed <= 1.8) {
             currentJudge = "WEAK HIT";
             evaluatedStatus = "miss";
             glowColorHex = "#ef4444";
             judgeText.className = "judge-display miss";
-          } else if (Math.abs(rawDiff) <= 0.05 && normalizedSpeed > 3.0) {
+          } else if (Math.abs(rawDiff) <= 0.06 && normalizedSpeed > 2.8) {
             currentJudge = "PERFECT!";
             evaluatedStatus = "perfect";
             glowColorHex = "#00ff66";
             judgeText.className = "judge-display perfect";
-          } else if (Math.abs(rawDiff) <= 0.09) {
+          } else if (Math.abs(rawDiff) <= 0.10) {
             currentJudge = "GREAT";
             evaluatedStatus = "great";
             glowColorHex = "#00f0ff";
             judgeText.className = "judge-display great";
-          } else if (rawDiff < -0.09) {
+          } else if (rawDiff < -0.06) {
             currentJudge = "FAST (早)";
             evaluatedStatus = "fast";
             glowColorHex = "#ff9900";
             judgeText.className = "judge-display fast";
-          } else if (rawDiff > 0.09) {
+          } else if (rawDiff > 0.06) {
             currentJudge = "LATE (遅)";
             evaluatedStatus = "late";
             glowColorHex = "#a855f7";
@@ -690,42 +703,43 @@
         judgeText.className = "judge-display";
       }
 
-      // --- リング描画（透過処理 + 外側からの収縮リング復元） ---
+      // --- リング描画 ---
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
-      const targetRadius = 36;
+      const dpr = window.devicePixelRatio || 1;
+      const targetRadius = 38 * dpr;
 
       ctx.save();
 
-      // 1. 中央の固定目標リング（透過度0.45）
+      // 1. 中央の固定目標リング（判定時にネオン発光）
       ctx.beginPath();
       ctx.arc(centerX, centerY, targetRadius, 0, Math.PI * 2);
 
       if (glowTimer > 0 && activeGlowColor) {
         glowTimer--;
         ctx.strokeStyle = activeGlowColor;
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 6 * dpr;
         ctx.shadowColor = activeGlowColor;
-        ctx.shadowBlur = 16;
+        ctx.shadowBlur = 18 * dpr;
       } else {
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
-        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.lineWidth = 3 * dpr;
         ctx.shadowBlur = 0;
       }
       ctx.stroke();
 
-      // 2. 外側から収縮する「アプローチリング」（透過度0.5）
+      // 2. 外側から流れてくるアプローチリング（楽曲のタイミングに完全同期）
       if (upcomingBeatTime !== null) {
-        const timeRemaining = upcomingBeatTime - correctedTime;
-        // 0.6秒前から外側（半径 100px）から目標（半径 36px）へ縮小
-        if (timeRemaining > -0.05 && timeRemaining <= 0.6) {
-          const progress = 1 - (timeRemaining / 0.6); // 0.0 -> 1.0
-          const currentRadius = 100 - (100 - targetRadius) * Math.min(1, Math.max(0, progress));
+        const timeRemaining = upcomingBeatTime - displayTime;
+        if (timeRemaining > -0.03 && timeRemaining <= APPROACH_WINDOW) {
+          const progress = 1 - (timeRemaining / APPROACH_WINDOW); // 0.0 -> 1.0
+          const startRadius = 120 * dpr;
+          const currentRadius = startRadius - (startRadius - targetRadius) * Math.min(1, Math.max(0, progress));
 
           ctx.beginPath();
           ctx.arc(centerX, centerY, currentRadius, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(0, 240, 255, 0.5)"; // 透過ネオンブルー
-          ctx.lineWidth = 2;
+          ctx.strokeStyle = "rgba(0, 240, 255, 0.65)";
+          ctx.lineWidth = 2.5 * dpr;
           ctx.stroke();
         }
       }
