@@ -1,0 +1,767 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DANCE BEAT VISION MOBILE</title>
+  <!-- MediaPipe Pose -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(180deg, #090511 0%, #160a2c 100%);
+      --card-bg: rgba(255, 255, 255, 0.07);
+      --pink-neon: #ff2a85;
+      --blue-neon: #00f0ff;
+      --green-neon: #00ff66;
+      --orange-neon: #ff9900;
+      --purple-neon: #a855f7;
+      --red-neon: #ef4444;
+      --text-main: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 10px 24px 10px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 12px;
+      width: 100%;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #ff2a85, #00f0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-help {
+      position: absolute;
+      top: 0;
+      right: 4px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-weight: bold;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .controls-top {
+      width: 100%;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: center;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .btn-upload {
+      background: linear-gradient(135deg, #ff2a85, #b527cf);
+      color: white;
+      width: 100%;
+      max-width: 340px;
+      padding: 10px 0;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 0.85rem;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(255, 42, 133, 0.4);
+      border: none;
+    }
+
+    .main-container {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .video-card {
+      position: relative;
+      width: 100%;
+      height: 52vh;
+      min-height: 320px;
+      background: #000;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    canvas#overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .judge-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .judge-display {
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    .judge-display.perfect { color: var(--green-neon); text-shadow: 0 0 12px var(--green-neon); }
+    .judge-display.great { color: var(--blue-neon); text-shadow: 0 0 12px var(--blue-neon); }
+    .judge-display.fast { color: var(--orange-neon); text-shadow: 0 0 12px var(--orange-neon); }
+    .judge-display.late { color: var(--purple-neon); text-shadow: 0 0 12px var(--purple-neon); }
+    .judge-display.miss { color: var(--red-neon); text-shadow: 0 0 12px var(--red-neon); }
+
+    .accuracy-box {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #e9d5ff;
+    }
+
+    .timeline-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .timeline-title {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #a78bfa;
+      letter-spacing: 0.5px;
+    }
+
+    .timeline-wrapper {
+      position: relative;
+      width: 100%;
+      height: 28px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+    }
+
+    canvas#timeline-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .speed-panel {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .speed-btn {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      padding: 8px 0;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.75rem;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .speed-btn.active {
+      background: var(--blue-neon);
+      color: #0d0714;
+      border-color: var(--blue-neon);
+      box-shadow: 0 0 10px var(--blue-neon);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #160a2c;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      width: 90%;
+      max-width: 380px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-header {
+      padding: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-weight: 900;
+      font-size: 1.1rem;
+      color: var(--blue-neon);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #aaa;
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: #ddd;
+    }
+
+    .modal-body h3 {
+      font-size: 0.95rem;
+      color: var(--pink-neon);
+      margin: 12px 0 6px 0;
+    }
+
+    .modal-body h3:first-child { margin-top: 0; }
+    .modal-body ul { padding-left: 18px; }
+
+    .modal-footer {
+      padding: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .version-text {
+      font-size: 0.75rem;
+      color: #a78bfa;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>DANCE BEAT VISION</h1>
+    <button id="btn-help" class="btn-help">？</button>
+  </header>
+
+  <div class="controls-top">
+    <label for="video-input" class="btn-upload">動画を選択する</label>
+    <input type="file" id="video-input" accept="video/*">
+  </div>
+
+  <div class="main-container">
+    <div class="video-card">
+      <video id="video" controls playsinline webkit-playsinline></video>
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <div class="judge-card">
+      <div id="judge-text" class="judge-display">-</div>
+      <div id="accuracy-text" class="accuracy-box">ACCURACY: --%</div>
+    </div>
+
+    <div class="timeline-card">
+      <span class="timeline-title">TIMELINE (タップでジャンプ)</span>
+      <div class="timeline-wrapper" id="timeline-wrapper">
+        <canvas id="timeline-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="speed-panel">
+      <button class="speed-btn" data-speed="0.5">0.5x</button>
+      <button class="speed-btn" data-speed="0.75">0.75x</button>
+      <button class="speed-btn active" data-speed="1.0">1.0x</button>
+      <button class="speed-btn" data-speed="1.25">1.25x</button>
+      <button class="speed-btn" data-speed="1.5">1.5x</button>
+    </div>
+  </div>
+
+  <div id="modal-help" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title">アプリの使い方</span>
+        <button id="modal-close" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h3>1. 動画の読み込み</h3>
+        <ul>
+          <li>「動画を選択する」からダンス動画を選ぶと、音源のビート（打点）を全自動で解析します。</li>
+        </ul>
+        <h3>2. 判定とリング演出</h3>
+        <ul>
+          <li><b>透過アプローチリング</b>：外側からビートのタイミングに合わせて中央へ縮小します。</li>
+          <li><b>目標リング</b>：ジャストタイミングで判定カラーに一瞬輝きます。</li>
+        </ul>
+        <h3>3. 判定の種類</h3>
+        <ul>
+          <li><b style="color:var(--green-neon)">PERFECT</b>: ビートにピッタリ合わせたキレのある動き</li>
+          <li><b style="color:var(--blue-neon)">GREAT</b>: タイミングの合った動き</li>
+          <li><b style="color:var(--orange-neon)">FAST (早)</b>: 音に対して少し早すぎるタイミング</li>
+          <li><b style="color:var(--purple-neon)">LATE (遅)</b>: 音に対して少し遅すぎるタイミング</li>
+          <li><b style="color:var(--red-neon)">WEAK HIT</b>: 動きが弱い（MISS）</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <div class="version-text">DANCE BEAT VISION Ver 3.3.0 (iOS Optimized)</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- DOM Elements ---
+    const btnHelp = document.getElementById('btn-help');
+    const modalHelp = document.getElementById('modal-help');
+    const modalClose = document.getElementById('modal-close');
+    const videoInput = document.getElementById('video-input');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+    const timelineCanvas = document.getElementById('timeline-canvas');
+    const timelineCtx = timelineCanvas.getContext('2d');
+    const timelineWrapper = document.getElementById('timeline-wrapper');
+    const judgeText = document.getElementById('judge-text');
+    const accuracyText = document.getElementById('accuracy-text');
+    const speedBtns = document.querySelectorAll('.speed-btn');
+
+    // --- State Variables ---
+    let motionSpeed = 0;
+    let prevLandmarks = null;
+    let judgeTimer = 0;
+    let currentJudge = "";
+
+    let isSeeking = false;
+    let warmUpFrames = 0;
+    let isProcessingPose = false;
+
+    let audioEnergyTimeline = [];
+    let audioSampleRate = 100;
+    let beatPeaks = [];
+
+    const judgeMap = new Map();
+    const evaluatedBeats = new Set();
+
+    let activeGlowColor = null;
+    let glowTimer = 0;
+
+    // --- iPhone/iOS Latency Correction (AI処理レイテンシ補正) ---
+    // AIの骨格認識～描画ラグ（約0.08秒）を補正し、FAST判定偏りを防止
+    const AI_LATENCY_OFFSET = 0.08; 
+
+    // --- Modal Logic ---
+    btnHelp.addEventListener('click', () => modalHelp.classList.add('active'));
+    modalClose.addEventListener('click', () => modalHelp.classList.remove('active'));
+    modalHelp.addEventListener('click', (e) => {
+      if (e.target === modalHelp) modalHelp.classList.remove('active');
+    });
+
+    // --- Seek Stabilization ---
+    video.addEventListener('seeking', () => {
+      isSeeking = true;
+      prevLandmarks = null;
+      motionSpeed = 0;
+    });
+
+    video.addEventListener('seeked', () => {
+      isSeeking = false;
+      warmUpFrames = 3;
+    });
+
+    function resetStats() {
+      judgeMap.clear();
+      evaluatedBeats.clear();
+      accuracyText.textContent = "ACCURACY: --%";
+      judgeText.textContent = "-";
+      glowTimer = 0;
+      activeGlowColor = null;
+      drawTimeline();
+    }
+
+    function recalculateAccuracy() {
+      const records = Array.from(judgeMap.values());
+      if (records.length === 0) {
+        accuracyText.textContent = "ACCURACY: --%";
+        return;
+      }
+      const perfects = records.filter(r => r.status === 'perfect' || r.status === 'great').length;
+      const accuracy = Math.round((perfects / records.length) * 100);
+      accuracyText.textContent = `ACCURACY: ${accuracy}%`;
+    }
+
+    function resizeCanvas() {
+      canvas.width = canvas.clientWidth * window.devicePixelRatio;
+      canvas.height = canvas.clientHeight * window.devicePixelRatio;
+      timelineCanvas.width = timelineWrapper.clientWidth;
+      timelineCanvas.height = timelineWrapper.clientHeight;
+      drawTimeline();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    speedBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        speedBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        video.playbackRate = parseFloat(btn.dataset.speed);
+      });
+    });
+
+    timelineWrapper.addEventListener('click', (e) => {
+      if (!video.duration) return;
+      const rect = timelineWrapper.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      video.currentTime = (clickX / rect.width) * video.duration;
+    });
+
+    // --- MediaPipe Pose Setup ---
+    const pose = new Pose({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+    });
+    pose.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      minDetectionConfidence: 0.6,
+      minTrackingConfidence: 0.6
+    });
+
+    pose.onResults((results) => {
+      isProcessingPose = false;
+      if (!results.poseLandmarks || isSeeking) return;
+
+      if (warmUpFrames > 0) {
+        warmUpFrames--;
+        prevLandmarks = results.poseLandmarks;
+        motionSpeed = 0;
+        return;
+      }
+
+      if (prevLandmarks) {
+        let totalDiff = 0;
+        const keyPoints = [11, 12, 15, 16, 23, 24, 27, 28];
+        keyPoints.forEach(idx => {
+          const p1 = prevLandmarks[idx];
+          const p2 = results.poseLandmarks[idx];
+          if (p1 && p2) {
+            const dx = p1.x - p2.x;
+            const dy = p1.y - p2.y;
+            totalDiff += Math.sqrt(dx * dx + dy * dy);
+          }
+        });
+        motionSpeed = totalDiff * 140;
+      }
+      prevLandmarks = results.poseLandmarks;
+    });
+
+    // --- Audio Dynamic Analysis (iOS Compatible) ---
+    videoInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      video.src = URL.createObjectURL(file);
+      resetStats();
+
+      video.onloadedmetadata = () => resizeCanvas();
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        const tempAudioCtx = new AudioCtxClass();
+        
+        // iPhone対策：Suspended状態のコンテキストをアクティブ化
+        if (tempAudioCtx.state === 'suspended') {
+          await tempAudioCtx.resume();
+        }
+
+        const audioBuffer = await tempAudioCtx.decodeAudioData(arrayBuffer);
+        analyzeAudioDynamic(audioBuffer);
+        tempAudioCtx.close();
+      } catch (err) {
+        audioEnergyTimeline = [];
+        beatPeaks = [];
+      }
+    });
+
+    function analyzeAudioDynamic(buffer) {
+      const data = buffer.getChannelData(0);
+      const sampleRate = buffer.sampleRate;
+      const step = Math.floor(sampleRate / audioSampleRate);
+      
+      audioEnergyTimeline = [];
+      beatPeaks = [];
+
+      let maxEnergy = 0;
+      for (let i = 0; i < data.length; i += step) {
+        let sum = 0;
+        for (let j = 0; j < step && (i + j) < data.length; j++) {
+          sum += data[i + j] * data[i + j];
+        }
+        const val = Math.sqrt(sum / step);
+        audioEnergyTimeline.push(val);
+        if (val > maxEnergy) maxEnergy = val;
+      }
+
+      const threshold = Math.max(0.35, maxEnergy * 0.45);
+
+      for (let i = 1; i < audioEnergyTimeline.length - 1; i++) {
+        if (audioEnergyTimeline[i] > threshold && 
+            audioEnergyTimeline[i] > audioEnergyTimeline[i - 1] && 
+            audioEnergyTimeline[i] > audioEnergyTimeline[i + 1]) {
+          beatPeaks.push(i / audioSampleRate);
+          i += 25;
+        }
+      }
+    }
+
+    // --- Animation & Evaluation Loop ---
+    video.addEventListener('play', () => {
+      renderLoop();
+    });
+
+    async function renderLoop() {
+      if (video.paused || video.ended) return;
+
+      if (!isProcessingPose && !isSeeking) {
+        isProcessingPose = true;
+        pose.send({ image: video }).catch(() => { isProcessingPose = false; });
+      }
+
+      evaluateDance(video.currentTime);
+      requestAnimationFrame(renderLoop);
+    }
+
+    function evaluateDance(currentTime) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // --- iOS/iPhone用処理遅延補正タイム ---
+      const correctedTime = currentTime - AI_LATENCY_OFFSET;
+
+      let nearestBeatTime = 0;
+      let minDiff = Infinity;
+      let nearestBeatIdx = -1;
+
+      // 最も近いビートの探索
+      for (let i = 0; i < beatPeaks.length; i++) {
+        const diff = Math.abs(correctedTime - beatPeaks[i]);
+        if (diff < minDiff) {
+          minDiff = diff;
+          nearestBeatTime = beatPeaks[i];
+          nearestBeatIdx = i;
+        }
+      }
+
+      // 次に来るビート（縮小リングの対象）を探す
+      let upcomingBeatTime = null;
+      for (let i = 0; i < beatPeaks.length; i++) {
+        const timeDiff = beatPeaks[i] - correctedTime;
+        if (timeDiff >= -0.1 && timeDiff <= 0.6) { // 0.6秒前からリングが近づいてくる
+          upcomingBeatTime = beatPeaks[i];
+          break;
+        }
+      }
+
+      const currentRate = video.playbackRate || 1.0;
+      const normalizedSpeed = motionSpeed / currentRate;
+      let evaluatedStatus = null;
+      let glowColorHex = null;
+
+      // --- 判定ロジック ---
+      const rawDiff = correctedTime - nearestBeatTime; 
+
+      if (!isSeeking && warmUpFrames === 0 && nearestBeatIdx !== -1 && Math.abs(rawDiff) <= 0.15) {
+        if (!evaluatedBeats.has(nearestBeatIdx)) {
+          evaluatedBeats.add(nearestBeatIdx);
+
+          if (normalizedSpeed <= 2.0) {
+            currentJudge = "WEAK HIT";
+            evaluatedStatus = "miss";
+            glowColorHex = "#ef4444";
+            judgeText.className = "judge-display miss";
+          } else if (Math.abs(rawDiff) <= 0.05 && normalizedSpeed > 3.0) {
+            currentJudge = "PERFECT!";
+            evaluatedStatus = "perfect";
+            glowColorHex = "#00ff66";
+            judgeText.className = "judge-display perfect";
+          } else if (Math.abs(rawDiff) <= 0.09) {
+            currentJudge = "GREAT";
+            evaluatedStatus = "great";
+            glowColorHex = "#00f0ff";
+            judgeText.className = "judge-display great";
+          } else if (rawDiff < -0.09) {
+            currentJudge = "FAST (早)";
+            evaluatedStatus = "fast";
+            glowColorHex = "#ff9900";
+            judgeText.className = "judge-display fast";
+          } else if (rawDiff > 0.09) {
+            currentJudge = "LATE (遅)";
+            evaluatedStatus = "late";
+            glowColorHex = "#a855f7";
+            judgeText.className = "judge-display late";
+          }
+
+          if (evaluatedStatus) {
+            judgeTimer = 14;
+            glowTimer = 10;
+            activeGlowColor = glowColorHex;
+            judgeMap.set(nearestBeatIdx, { time: currentTime, status: evaluatedStatus });
+            recalculateAccuracy();
+          }
+        }
+      }
+
+      if (judgeTimer > 0) {
+        judgeTimer--;
+        judgeText.textContent = currentJudge;
+      } else {
+        judgeText.textContent = "-";
+        judgeText.className = "judge-display";
+      }
+
+      // --- リング描画（透過処理 + 外側からの収縮リング復元） ---
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const targetRadius = 36;
+
+      ctx.save();
+
+      // 1. 中央の固定目標リング（透過度0.45）
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, targetRadius, 0, Math.PI * 2);
+
+      if (glowTimer > 0 && activeGlowColor) {
+        glowTimer--;
+        ctx.strokeStyle = activeGlowColor;
+        ctx.lineWidth = 5;
+        ctx.shadowColor = activeGlowColor;
+        ctx.shadowBlur = 16;
+      } else {
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
+        ctx.lineWidth = 2.5;
+        ctx.shadowBlur = 0;
+      }
+      ctx.stroke();
+
+      // 2. 外側から収縮する「アプローチリング」（透過度0.5）
+      if (upcomingBeatTime !== null) {
+        const timeRemaining = upcomingBeatTime - correctedTime;
+        // 0.6秒前から外側（半径 100px）から目標（半径 36px）へ縮小
+        if (timeRemaining > -0.05 && timeRemaining <= 0.6) {
+          const progress = 1 - (timeRemaining / 0.6); // 0.0 -> 1.0
+          const currentRadius = 100 - (100 - targetRadius) * Math.min(1, Math.max(0, progress));
+
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, currentRadius, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(0, 240, 255, 0.5)"; // 透過ネオンブルー
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+
+      drawTimeline();
+    }
+
+    function drawTimeline() {
+      const w = timelineCanvas.width;
+      const h = timelineCanvas.height;
+      const duration = video.duration || 1;
+
+      timelineCtx.clearRect(0, 0, w, h);
+      const blockWidth = Math.max(3, w / (duration * 10));
+
+      judgeMap.forEach(item => {
+        const x = (item.time / duration) * w;
+        switch (item.status) {
+          case 'perfect': timelineCtx.fillStyle = '#00ff66'; break;
+          case 'great': timelineCtx.fillStyle = '#00f0ff'; break;
+          case 'fast': timelineCtx.fillStyle = '#ff9900'; break;
+          case 'late': timelineCtx.fillStyle = '#a855f7'; break;
+          case 'miss': timelineCtx.fillStyle = '#ef4444'; break;
+        }
+        timelineCtx.fillRect(x - blockWidth / 2, 0, blockWidth, h);
+      });
+
+      const currentX = (video.currentTime / duration) * w;
+      timelineCtx.fillStyle = '#ffffff';
+      timelineCtx.shadowColor = '#ffffff';
+      timelineCtx.shadowBlur = 8;
+      timelineCtx.fillRect(currentX - 1, 0, 2, h);
+      timelineCtx.shadowBlur = 0;
+    }
+  </script>
+</body>
+</html>
