@@ -404,7 +404,7 @@
         </ul>
       </div>
       <div class="modal-footer">
-        <div class="version-text">DANCE BEAT VISION Ver 4.4.0 (iOS Stable)</div>
+        <div class="version-text">DANCE BEAT VISION Ver 4.5.0 (iOS Robust)</div>
       </div>
     </div>
   </div>
@@ -433,6 +433,7 @@
     let warmUpFrames = 0;
     let isProcessingPose = false;
     let frameCounter = 0;
+    let animationId = null;
 
     let audioEnergyTimeline = [];
     let audioSampleRate = 100;
@@ -445,12 +446,12 @@
     let glowTimer = 0;
 
     // --- 設定値 ---
-    const TIME_OFFSET = 0.15;       // 処理遅延補正（秒）
-    const WINDOW_PERFECT = 0.10;   // 完璧なタイミング幅（±0.10秒）
-    const WINDOW_GREAT = 0.18;     // 良好な幅（±0.18秒）
-    const WINDOW_GOOD = 0.26;      // 少しのズレ幅（±0.26秒）
-    const WINDOW_TIMING = 0.35;    // 大きなズレ幅（±0.35秒）
-    const APPROACH_WINDOW = 0.75;   // リング収縮描画の先行時間（秒）
+    const TIME_OFFSET = 0.15;       
+    const WINDOW_PERFECT = 0.10;   
+    const WINDOW_GREAT = 0.18;     
+    const WINDOW_GOOD = 0.26;      
+    const WINDOW_TIMING = 0.35;    
+    const APPROACH_WINDOW = 0.75;   
 
     // --- Modal Logic ---
     btnHelp.addEventListener('click', () => modalHelp.classList.add('active'));
@@ -474,10 +475,7 @@
     window.addEventListener('resize', resizeCanvas);
     window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 300));
 
-    video.addEventListener('seeking', () => {
-      isSeeking = true;
-    });
-
+    video.addEventListener('seeking', () => { isSeeking = true; });
     video.addEventListener('seeked', () => {
       isSeeking = false;
       warmUpFrames = 3;
@@ -520,22 +518,26 @@
     });
 
     // --- MediaPipe Pose Setup ---
-    const pose = new Pose({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
-    });
-    pose.setOptions({
-      modelComplexity: 0,
-      smoothLandmarks: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
-    });
-
-    pose.onResults((results) => {
-      isProcessingPose = false;
-      if (warmUpFrames > 0) {
-        warmUpFrames--;
-      }
-    });
+    let pose = null;
+    try {
+      pose = new Pose({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+      });
+      pose.setOptions({
+        modelComplexity: 0,
+        smoothLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+      pose.onResults((results) => {
+        isProcessingPose = false;
+        if (warmUpFrames > 0) {
+          warmUpFrames--;
+        }
+      });
+    } catch (e) {
+      console.warn("MediaPipe initialization failed, continuing without pose tracking:", e);
+    }
 
     // --- Audio Analysis ---
     videoInput.addEventListener('change', async (e) => {
@@ -543,6 +545,9 @@
       if (!file) return;
 
       resetStats();
+      if (video.src) {
+        URL.revokeObjectURL(video.src);
+      }
       video.src = URL.createObjectURL(file);
       
       video.onloadedmetadata = () => {
@@ -604,28 +609,46 @@
       }
     }
 
-    // --- Render Loop (iOS安定化対策：描画とポーズ処理を分離・間引き) ---
+    // --- Render Loop Control ---
     video.addEventListener('play', () => {
       resizeCanvas();
+      if (animationId) cancelAnimationFrame(animationId);
       renderLoop();
+    });
+
+    video.addEventListener('pause', () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    });
+
+    video.addEventListener('ended', () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
     });
 
     function renderLoop() {
       if (video.paused || video.ended) return;
 
       frameCounter++;
-      // iOSでの過負荷を防ぐため、MediaPipeへの送信は2フレームに1回に間引く
-      if (frameCounter % 2 === 0 && !isProcessingPose && !isSeeking && video.readyState >= 2) {
+      // iOSでの負荷対策としてPose送信を3フレームに1回にスロットリング
+      if (pose && frameCounter % 3 === 0 && !isProcessingPose && !isSeeking && video.readyState >= 2) {
         isProcessingPose = true;
-        pose.send({ image: video }).catch(() => { isProcessingPose = false; });
+        pose.send({ image: video }).catch(() => { 
+          isProcessingPose = false; 
+        });
       }
 
-      // 描画と判定は毎フレーム確実に実行（これでリングが消えません）
       try {
         evaluateDance(video.currentTime || 0);
-      } catch (err) {}
+      } catch (err) {
+        console.error("Evaluation error:", err);
+      }
 
-      requestAnimationFrame(renderLoop);
+      animationId = requestAnimationFrame(renderLoop);
     }
 
     function evaluateDance(currentTime) {
@@ -686,7 +709,7 @@
           } else {
             currentJudge = timeDiff < 0 ? "EARLY" : "LATE";
             evaluatedStatus = "timing";
-            glowColorHex = "#ef4444";
+            glowColorHex = "#ef4444"; // 大きなズレは赤
             judgeText.className = "judge-display timing";
           }
 
